@@ -88,78 +88,114 @@ window.onload = (() => {
 
 
     // create buffer
-    let boxVertices = [
-        //X, Y, Z,         R, G, B
-        // Top
-        -1.0, 1.0, -1.0,    1, 1,
-        -1.0, 1.0, 1.0,     1, 0,
-        1.0, 1.0, 1.0,      0, 0,
-        1.0, 1.0, -1.0,     0, 1,
+    let coords = [
+        [-1, -1, -1],
+        [-1, -1, 0],
+        [-1, -1, 1],
+        [0, -1, -1],
+        [0, -1, 1],
+        [1, -1, -1],
+        [1, -1, 0],
+        [1, -1, 1],
+        [-1, 0, -1],
+        [-1, 0, 1],
+        [1, 0, -1],
+        [1, 0, 1],
+        [-1, 1, -1],
+        [-1, 1, 0],
+        [-1, 1, 1],
+        [0, 1, -1],
+        [0, 1, 1],
+        [1, 1, -1],
+        [1, 1, 0],
+        [1, 1, 1]
+    ]
 
-        // Left
-        -1.0, 1.0, 1.0,     1, 0,
-        -1.0, -1.0, 1.0,    1, 1,
-        -1.0, -1.0, -1.0,   0, 1,
-        -1.0, 1.0, -1.0,    0, 0,
+    let allBoxVertices = [];
+    let allBoxIndices = [];
 
-        // Right
-        1.0, 1.0, 1.0,      0, 0,
-        1.0, -1.0, 1.0,     0, 1,
-        1.0, -1.0, -1.0,    1, 1,
-        1.0, 1.0, -1.0,     1, 0,
+    let ox = 0;
+    let oy = 0;
+    let oz = 0;
 
-        // Front
-        1.0, 1.0, 1.0,      1, 0,
-        1.0, -1.0, 1.0,     1, 1,
-        -1.0, -1.0, 1.0,    0, 1,
-        -1.0, 1.0, 1.0,     0, 0,
+    coords.forEach((coord, index) => {
+        ox = coord[0] * 2;
+        oy = coord[1] * 2;
+        oz = coord[2] * 2;
 
-        // Back
-        1.0, 1.0, -1.0,     0, 0,
-        1.0, -1.0, -1.0,    0, 1,
-        -1.0, -1.0, -1.0,   1, 1,
-        -1.0, 1.0, -1.0,    1, 0,
+        allBoxVertices = allBoxVertices.concat([
+            //X, Y, Z,                         U, V
+            // Top
+            -1.0 + ox, 1.0 + oy, -1.0 + oz,    1, 1,
+            -1.0 + ox, 1.0 + oy, 1.0 + oz,     1, 0,
+            1.0 + ox, 1.0 + oy, 1.0 + oz,      0, 0,
+            1.0 + ox, 1.0 + oy, -1.0 + oz,     0, 1,
 
-        // Bottom
-        -1.0, -1.0, -1.0,   1, 0,
-        -1.0, -1.0, 1.0,    1, 1,
-        1.0, -1.0, 1.0,     0, 1,
-        1.0, -1.0, -1.0,    0, 0
-    ];
+            // Left
+            -1.0 + ox, 1.0 + oy, 1.0 + oz,     1, 0,
+            -1.0 + ox, -1.0 + oy, 1.0 + oz,    1, 1,
+            -1.0 + ox, -1.0 + oy, -1.0 + oz,   0, 1,
+            -1.0 + ox, 1.0 + oy, -1.0 + oz,    0, 0,
 
-    let boxIndices = [
-        // Top
-        0, 1, 2,
-        0, 2, 3,
+            // Right
+            1.0 + ox, 1.0 + oy, 1.0 + oz,      0, 0,
+            1.0 + ox, -1.0 + oy, 1.0 + oz,     0, 1,
+            1.0 + ox, -1.0 + oy, -1.0 + oz,    1, 1,
+            1.0 + ox, 1.0 + oy, -1.0 + oz,     1, 0,
 
-        // Left
-        5, 4, 6,
-        6, 4, 7,
+            // Front
+            1.0 + ox, 1.0 + oy, 1.0 + oz,      1, 0,
+            1.0 + ox, -1.0 + oy, 1.0 + oz,     1, 1,
+            -1.0 + ox, -1.0 + oy, 1.0 + oz,    0, 1,
+            -1.0 + ox, 1.0 + oy, 1.0 + oz,     0, 0,
 
-        // Right
-        8, 9, 10,
-        8, 10, 11,
+            // Back
+            1.0 + ox, 1.0 + oy, -1.0 + oz,     0, 0,
+            1.0 + ox, -1.0 + oy, -1.0 + oz,    0, 1,
+            -1.0 + ox, -1.0 + oy, -1.0 + oz,   1, 1,
+            -1.0 + ox, 1.0 + oy, -1.0 + oz,    1, 0,
 
-        // Front
-        13, 12, 14,
-        15, 14, 12,
+            // Bottom
+            -1.0 + ox, -1.0 + oy, -1.0 + oz,   1, 0,
+            -1.0 + ox, -1.0 + oy, 1.0 + oz,    1, 1,
+            1.0 + ox, -1.0 + oy, 1.0 + oz,     0, 1,
+            1.0 + ox, -1.0 + oy, -1.0 + oz,    0, 0
+        ])
 
-        // Back
-        16, 17, 18,
-        16, 18, 19,
+        allBoxIndices = allBoxIndices.concat([
+            // Top
+            0 + 24 * index, 1 + 24 * index, 2 + 24 * index,
+            0 + 24 * index, 2 + 24 * index, 3 + 24 * index,
 
-        // Bottom
-        21, 20, 22,
-        22, 20, 23
-    ];
+            // Left
+            5 + 24 * index, 4 + 24 * index, 6 + 24 * index,
+            6 + 24 * index, 4 + 24 * index, 7 + 24 * index,
+
+            // Right
+            8 + 24 * index, 9 + 24 * index, 10 + 24 * index,
+            8 + 24 * index, 10 + 24 * index, 11 + 24 * index,
+
+            // Front
+            13 + 24 * index, 12 + 24 * index, 14 + 24 * index,
+            15 + 24 * index, 14 + 24 * index, 12 + 24 * index,
+
+            // Back
+            16 + 24 * index, 17 + 24 * index, 18 + 24 * index,
+            16 + 24 * index, 18 + 24 * index, 19 + 24 * index,
+
+            // Bottom
+            21 + 24 * index, 20 + 24 * index, 22 + 24 * index,
+            22 + 24 * index, 20 + 24 * index, 23 + 24 * index
+        ])
+    })
 
     let boxVertexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBoxVertices), gl.STATIC_DRAW);
 
     let boxIndexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBoxIndices), gl.STATIC_DRAW);
 
     let positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     let texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
@@ -206,16 +242,13 @@ window.onload = (() => {
     let viewMatrix = new Float32Array(16);
     let projMatrix = new Float32Array(16);
     glMatrix.mat4.identity(worldMatrix);
-    glMatrix.mat4.lookAt(viewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0])
+    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -12], [0, 0, 0], [0, 1, 0])
     // canvas.width / canvas.height causes mild issues / inconsistencies ... I think?
     glMatrix.mat4.perspective(projMatrix, glMatrix.glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
     gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
     gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-
-    let xRotationMatrix = new Float32Array(16);
-    let yRotationMatrix = new Float32Array(16);
 
 
     // main render loop
@@ -224,9 +257,7 @@ window.onload = (() => {
     let angle = 0;
     let loop = () => {
         angle = performance.now() / 1000 / 6 * 2 * Math.PI; // 1 rotation every 6 seconds
-        glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
-        glMatrix.mat4.mul(worldMatrix, xRotationMatrix, yRotationMatrix);
+        glMatrix.mat4.rotate(worldMatrix, identityMatrix, angle / 4, [0, 1, 0]);
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
 
         gl.clearColor(0.75, 0.85, 0.8, 1.0);
@@ -235,7 +266,7 @@ window.onload = (() => {
         gl.bindTexture(gl.TEXTURE_2D, boxTexture);
         gl.activeTexture(gl.TEXTURE0);
 
-        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, allBoxIndices.length, gl.UNSIGNED_SHORT, 0);
 
         requestAnimationFrame(loop);
     };
