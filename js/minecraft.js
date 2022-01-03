@@ -89,16 +89,15 @@ window.onload = (() => {
 
     // create buffer
     let blocks = [
-        {'name' : 'redstone_block', 'coords' : [-1, -1, -1]},
-        {'name' : 'smooth_stone',   'coords' : [-1, -1, 0]},
-        {'name' : 'redstone_block', 'coords' : [-1, -1, 1]},
-        {'name' : 'smooth_stone',   'coords' : [0, -1, -1]},
-        {'name' : 'smooth_stone',   'coords' : [0, -1, 0]},
-        {'name' : 'smooth_stone',   'coords' : [0, -1, 1]},
-        {'name' : 'redstone_block', 'coords' : [1, -1, -1]},
-        {'name' : 'smooth_stone',   'coords' : [1, -1, 0]},
-        {'name' : 'redstone_block', 'coords' : [1, -1, 1]},
-        {'name' : 'piston', 'coords' : [0, 0, 0], 'facing' : 'top'}
+        {'name' : 'smooth_stone', 'coords' : [-1, 0, -1]},
+        {'name' : 'smooth_stone', 'coords' : [-1, 0, 1]},
+        {'name' : 'redstone_block',   'coords' : [0, 0, 0]},
+        {'name' : 'smooth_stone', 'coords' : [1, 0, -1]},
+        {'name' : 'smooth_stone', 'coords' : [1, 0, 1]},
+        {'name' : 'piston', 'coords' : [-1, 0, 0], 'facing' : 'left'},
+        {'name' : 'piston', 'coords' : [0, 0, -1], 'facing' : 'back'},
+        {'name' : 'piston', 'coords' : [1, 0, 0], 'facing' : 'right'},
+        {'name' : 'piston', 'coords' : [0, 0, 1], 'facing' : 'front'}
     ]
 
     let allBlockVertices = [];
@@ -108,8 +107,8 @@ window.onload = (() => {
     let oy = 0;
     let oz = 0;
 
-    let texCoords = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
     /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
+    let texCoords = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
 
     blocks.forEach((block, index) => {
         ox = block.coords[0] * 2;
@@ -232,13 +231,15 @@ window.onload = (() => {
     let viewMatrix = new Float32Array(16);
     let projMatrix = new Float32Array(16);
     glMatrix.mat4.identity(worldMatrix);
-    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -12], [0, 0, 0], [0, 1, 0])
-    // canvas.width / canvas.height causes mild issues / inconsistencies ... I think?
+    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -10], [0, 0, 0], [0, 1, 0])
     glMatrix.mat4.perspective(projMatrix, glMatrix.glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
     gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
     gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+
+    /*let xRotationMatrix = new Float32Array(16);
+    let yRotationMatrix = new Float32Array(16);*/
 
 
     // main render loop
@@ -248,6 +249,10 @@ window.onload = (() => {
     let loop = () => {
         angle = performance.now() / 1000 / 6 * 2 * Math.PI; // 1 rotation every 6 seconds
         glMatrix.mat4.rotate(worldMatrix, identityMatrix, angle / 4, [0, 1, 0]);
+
+        /*glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle / 2, [0, 1, 0]);
+        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 8, [1, 0, 0]);
+        glMatrix.mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);*/
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
 
         gl.clearColor(0.75, 0.85, 0.8, 1.0);
@@ -369,62 +374,111 @@ function singleBlockVertices(ox, oy, oz, texCoords, facing = 'top') {
     * Go 1 down => rotate left in front / right in back
     * */
 
-    let topVertices = [
-        //X, Y, Z,                         U, V
-        // Top
-        -1.0 + ox, 1.0 + oy, -1.0 + oz,    texCoords[1]/64,        texCoords[0]/32,
-        -1.0 + ox, 1.0 + oy, 1.0 + oz,     texCoords[1]/64,       (texCoords[0] + 1)/32,
-        1.0 + ox, 1.0 + oy, 1.0 + oz,      (texCoords[1] + 1)/64, (texCoords[0] + 1)/32,
-        1.0 + ox, 1.0 + oy, -1.0 + oz,     (texCoords[1] + 1)/64,  texCoords[0]/32
-    ]
+    const TOP = 0;
+    const LEFT = 1;
+    const RIGHT = 2;
+    const FRONT = 3;
+    const BACK = 4;
+    const BOTTOM = 5;
 
-    let sidesVirtices = [];
+    const TOP_COORDS_SCHEMA = [-1, 1, -1, -1, 1, 1, 1, 1, 1, 1, 1, -1];
+    const LEFT_COORDS_SCHEMA = [-1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1];
+    const RIGHT_COORDS_SCHEMA = [1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1];
+    const FRONT_COORDS_SCHEMA = [1, 1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1];
+    const BACK_COORDS_SCHEMA = [1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1];
+    const BOTTOM_COORDS_SCHEMA = [-1, -1, -1, -1, -1, 1, 1, -1, 1, 1, -1, -1];
 
-    // mirrored
-    sidesVirtices = sidesVirtices.concat([
-        //X, Y, Z,                         U, V
-        // Left
-        -1.0 + ox, 1.0 + oy, 1.0 + oz,     (texCoords[3] + 1)/64,  texCoords[2]/32,
-        -1.0 + ox, -1.0 + oy, 1.0 + oz,    (texCoords[3] + 1)/64, (texCoords[2] + 1)/32,
-        -1.0 + ox, -1.0 + oy, -1.0 + oz,   texCoords[3]/64,       (texCoords[2] + 1)/32,
-        -1.0 + ox, 1.0 + oy, -1.0 + oz,    texCoords[3]/64,        texCoords[2]/32
-    ])
+    const A_TEX_SCHEMA = [0, 0, 0, 1, 1, 1, 1, 0];
+    const B_TEX_SCHEMA = [1, 0, 0, 0, 0, 1, 1, 1];
+    const C_TEX_SCHEMA = [0, 1, 1, 1, 1, 0, 0, 0];
+    const D_TEX_SCHEMA = [1, 1, 1, 0, 0, 0, 0, 1];
 
-    sidesVirtices = sidesVirtices.concat([
-        //X, Y, Z,                         U, V
-        // Right
-        1.0 + ox, 1.0 + oy, 1.0 + oz,      texCoords[5]/64,        texCoords[4]/32,
-        1.0 + ox, -1.0 + oy, 1.0 + oz,     texCoords[5]/64,       (texCoords[4] + 1)/32,
-        1.0 + ox, -1.0 + oy, -1.0 + oz,    (texCoords[5] + 1)/64, (texCoords[4] + 1)/32,
-        1.0 + ox, 1.0 + oy, -1.0 + oz,     (texCoords[5] + 1)/64,  texCoords[4]/32
-    ])
+    let topVertices = [];
+    let leftVertices = [];
+    let rightVertices = [];
+    let frontVertices = [];
+    let backVertices = [];
+    let bottomVertices = [];
 
-    sidesVirtices = sidesVirtices.concat([
-        //X, Y, Z,                         U, V
-        // Front
-        1.0 + ox, 1.0 + oy, 1.0 + oz,      (texCoords[7] + 1)/64,  texCoords[6]/32,
-        1.0 + ox, -1.0 + oy, 1.0 + oz,     (texCoords[7] + 1)/64, (texCoords[6] + 1)/32,
-        -1.0 + ox, -1.0 + oy, 1.0 + oz,    texCoords[7]/64,       (texCoords[6] + 1)/32,
-        -1.0 + ox, 1.0 + oy, 1.0 + oz,     texCoords[7]/64,        texCoords[6]/32
-    ])
+    // Top
+    switch (facing) {
+        case 'top':
+        case 'back':
+        case 'bottom':   topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'left':     topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'right':    topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'front':    topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, D_TEX_SCHEMA);
+    }
 
-    sidesVirtices = sidesVirtices.concat([
-        //X, Y, Z,                         U, V
-        // Back
-        1.0 + ox, 1.0 + oy, -1.0 + oz,     texCoords[9]/64,        texCoords[8]/32,
-        1.0 + ox, -1.0 + oy, -1.0 + oz,    texCoords[9]/64,       (texCoords[8] + 1)/32,
-        -1.0 + ox, -1.0 + oy, -1.0 + oz,   (texCoords[9] + 1)/64, (texCoords[8] + 1)/32,
-        -1.0 + ox, 1.0 + oy, -1.0 + oz,    (texCoords[9] + 1)/64,  texCoords[8]/32
-    ]);
+    // Left
+    switch (facing) {
+        case 'top':
+        case 'left':
+        case 'right':    leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'front':    leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'back':     leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'bottom':   leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, D_TEX_SCHEMA);   break;
+    }
 
-    let bottomVertices = [
-        //X, Y, Z,                         U, V
-        // Bottom
-        -1.0 + ox, -1.0 + oy, -1.0 + oz,   (texCoords[11] + 1)/64,  texCoords[10]/32,
-        -1.0 + ox, -1.0 + oy, 1.0 + oz,    (texCoords[11] + 1)/64, (texCoords[10] + 1)/32,
-        1.0 + ox, -1.0 + oy, 1.0 + oz,     texCoords[11]/64,       (texCoords[10] + 1)/32,
-        1.0 + ox, -1.0 + oy, -1.0 + oz,    texCoords[11]/64,        texCoords[10]/32
-    ]
+    // Right
+    switch (facing) {
+        case 'top':
+        case 'left':
+        case 'right':    rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'front':    rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'back':     rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'bottom':   rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, D_TEX_SCHEMA);
+    }
 
-    return topVertices.concat(sidesVirtices.concat(bottomVertices));
+    // Front
+    switch (facing) {
+        case 'top':
+        case 'front':
+        case 'back':     frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'left':     frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'right':    frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'bottom':   frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, D_TEX_SCHEMA);
+    }
+
+    // Back
+    switch (facing) {
+        case 'top':
+        case 'front':
+        case 'back':     backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'left':     backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'right':    backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'bottom':   backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, D_TEX_SCHEMA);
+    }
+
+    //Bottom
+    switch (facing) {
+        case 'top':
+        case 'back':
+        case 'bottom':   bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
+        case 'left':     bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
+        case 'right':    bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
+        case 'front':    bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, D_TEX_SCHEMA);
+    }
+
+    return topVertices.concat(
+            leftVertices.concat(
+                rightVertices.concat(
+                    frontVertices.concat(
+                        backVertices.concat(
+                            bottomVertices
+                        )
+                    )
+                )
+            )
+        )
+}
+
+function faceVertices(texCoords, facing, ox, oy, oz, COORDS_SCHEMA, TEX_SCHEMA) {
+    return [
+        //X, Y, Z,                                                               U, V
+        COORDS_SCHEMA[0] + ox, COORDS_SCHEMA[1] + oy,  COORDS_SCHEMA[2] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[0]) / 64, (texCoords[facing*2] + TEX_SCHEMA[1]) / 32,
+        COORDS_SCHEMA[3] + ox, COORDS_SCHEMA[4] + oy,  COORDS_SCHEMA[5] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[2]) / 64, (texCoords[facing*2] + TEX_SCHEMA[3]) / 32,
+        COORDS_SCHEMA[6] + ox, COORDS_SCHEMA[7] + oy,  COORDS_SCHEMA[8] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[4]) / 64, (texCoords[facing*2] + TEX_SCHEMA[5]) / 32,
+        COORDS_SCHEMA[9] + ox, COORDS_SCHEMA[10] + oy, COORDS_SCHEMA[11] + oz,   (texCoords[facing*2+1] + TEX_SCHEMA[6]) / 64, (texCoords[facing*2] + TEX_SCHEMA[7]) / 32
+    ];
 }
