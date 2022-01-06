@@ -1,5 +1,22 @@
 "use strict"
 
+class powerTask{
+    constructor(worldTicks, priority, power, strength, level, x, y, z) {
+        // EVERY!!! task has these
+        this.worldTicks = worldTicks;   // worldTicks until execution (1 worldTick = 0.5 redstoneTicks)
+        this.priority = priority;   // defines order of execution, the smaller, the earlier the execution
+        // this specific task has these
+        this.action = 'power';      // identifies generic task as power task
+        this.power = power;         // true means to power, false means to depower
+        this.strength = strength;   // weak means can power anything that requires redstone, strong can also power blocks and similar
+        this.level = level;         // redstone signal strength, reduces by 1 every block
+        // every??? task has these
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+}
+
 let vertexShaderText = [
     'precision mediump float;',
     '',
@@ -87,112 +104,48 @@ window.onload = (() => {
     }
 
 
-    // create buffer
-    let blocks = [
-        {'name' : 'smooth_stone', 'coords' : [-1, 0, -1]},
-        {'name' : 'smooth_stone', 'coords' : [-1, 0, 1]},
-        {'name' : 'redstone_block',   'coords' : [0, 0, 0]},
-        {'name' : 'smooth_stone', 'coords' : [1, 0, -1]},
-        {'name' : 'smooth_stone', 'coords' : [1, 0, 1]},
-        {'name' : 'piston', 'coords' : [-1, 0, 0], 'facing' : 'left'},
-        {'name' : 'piston', 'coords' : [0, 0, -1], 'facing' : 'back'},
-        {'name' : 'piston', 'coords' : [1, 0, 0], 'facing' : 'right'},
-        {'name' : 'piston', 'coords' : [0, 0, 1], 'facing' : 'front'}
-    ]
 
-    let allBlockVertices = [];
-    let allBlockIndices = [];
+    /// create buffer
+    // initiate array that contains all blocks filled with air 5x5x5
+    let lengthX = 5;
+    let lengthY = 5;
+    let lengthZ = 5;
+    let blocks = new Array(lengthX * lengthY * lengthZ);
+    for (let i = 0; i < lengthX*lengthY*lengthZ; i++) {
+        blocks[i] = {'name' : 'air'};
+    }
 
-    let ox = 0;
-    let oy = 0;
-    let oz = 0;
-
-    /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
-    let texCoords = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-
-    blocks.forEach((block, index) => {
-        ox = block.coords[0] * 2;
-        oy = block.coords[1] * 2;
-        oz = block.coords[2] * 2;
-
-        texCoords.forEach((_, index) => {
-            texCoords[index] = -1;
-        })
-
-        // acacia planks: row 5, column 11
-        switch (block.name) {
-            case 'smooth_stone':
-                texCoords[0] = 20;
-                texCoords[1] = 14;
-                break;
-            case 'redstone_block':
-                texCoords[0] = 18;
-                texCoords[1] = 30;
-                break;
-            case 'piston':
-                texCoords[0] = 17;
-                texCoords[1] = 4;
-
-                texCoords[2] = 17;
-                texCoords[3] = 3;
-                texCoords[4] = 17;
-                texCoords[5] = 3;
-                texCoords[6] = 17;
-                texCoords[7] = 3;
-                texCoords[8] = 17;
-                texCoords[9] = 3;
-
-                texCoords[10] = 17;
-                texCoords[11] = 1;
-                break;
+    // set floor to smooth_stone
+    for (let x = 0; x < lengthX; x++) {
+        for (let z = 0; z < lengthZ; z++) {
+            blocks[index3dArray(x, 0, z, lengthX, lengthY)] = {'name' : 'smooth_stone'};
         }
+    }
 
-        texCoords = rotateTexCoords(texCoords, block.facing);
+    // set some other example blocks
+    // blocks[index3dArray(3, 1, 1, lengthX, lengthY)] = {'name' : 'redstone_dust', 'lines' : [], 'powered' : []};
+    blocks[index3dArray(1, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'left'};
+    blocks[index3dArray(2, 1, 1, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'back'};
+    blocks[index3dArray(3, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'right'};
+    blocks[index3dArray(2, 1, 3, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'front'};
+    // TODO blocks = shapeRedstoneDust(blocks);
 
-        allBlockVertices = allBlockVertices.concat(singleBlockVertices(ox, oy, oz, texCoords, block.facing))
 
-        allBlockIndices = allBlockIndices.concat([
-            // Top
-            0 + 24 * index, 1 + 24 * index, 2 + 24 * index,
-            0 + 24 * index, 2 + 24 * index, 3 + 24 * index,
+    // !WARNING! Requires ECMAScript 6, may not work in Internet Explorer
+    let [allBlockVertices, allBlockIndices] = getBlockData(blocks, lengthX, lengthY, lengthZ);
 
-            // Left
-            5 + 24 * index, 4 + 24 * index, 6 + 24 * index,
-            6 + 24 * index, 4 + 24 * index, 7 + 24 * index,
+    setBuffers(gl, allBlockVertices, allBlockIndices);
 
-            // Right
-            8 + 24 * index, 9 + 24 * index, 10 + 24 * index,
-            8 + 24 * index, 10 + 24 * index, 11 + 24 * index,
 
-            // Front
-            13 + 24 * index, 12 + 24 * index, 14 + 24 * index,
-            15 + 24 * index, 14 + 24 * index, 12 + 24 * index,
-
-            // Back
-            16 + 24 * index, 17 + 24 * index, 18 + 24 * index,
-            16 + 24 * index, 18 + 24 * index, 19 + 24 * index,
-
-            // Bottom
-            21 + 24 * index, 20 + 24 * index, 22 + 24 * index,
-            22 + 24 * index, 20 + 24 * index, 23 + 24 * index
-        ])
-    })
-
-    let boxVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBlockVertices), gl.STATIC_DRAW);
-
-    let boxIndexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBlockIndices), gl.STATIC_DRAW);
-
+    // look up where the vertex data needs to go
     let positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     let texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
+
     gl.vertexAttribPointer(
         positionAttribLocation, // Attribute location
         3, // Number of elements per attribute
         gl.FLOAT, // Type of elements
-        gl.FALSE, // Data is normalized
+        false, // Data is normalized
         5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
         0 // Offset from the beginning of a single vertex to this attribute
     );
@@ -200,12 +153,12 @@ window.onload = (() => {
         texCoordAttribLocation, // Attribute location
         2, // Number of elements per attribute
         gl.FLOAT, // Type of elements
-        gl.FALSE, // Data is normalized
+        false, // Data is normalized
         5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
         3 * Float32Array.BYTES_PER_ELEMENT // Offset from the beginning of a single vertex to this attribute
     );
 
-
+    // tell WebGL we want to supply data from a buffer
     gl.enableVertexAttribArray(positionAttribLocation);
     gl.enableVertexAttribArray(texCoordAttribLocation);
 
@@ -231,29 +184,67 @@ window.onload = (() => {
     let viewMatrix = new Float32Array(16);
     let projMatrix = new Float32Array(16);
     glMatrix.mat4.identity(worldMatrix);
-    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -10], [0, 0, 0], [0, 1, 0])
+    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -15], [0, -4, 0], [0, 1, 0])
     glMatrix.mat4.perspective(projMatrix, glMatrix.glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
-    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+    gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
+    gl.uniformMatrix4fv(matViewUniformLocation, false, viewMatrix);
+    gl.uniformMatrix4fv(matProjUniformLocation, false, projMatrix);
 
     /*let xRotationMatrix = new Float32Array(16);
     let yRotationMatrix = new Float32Array(16);*/
 
 
-    // main render loop
+    // main render loop ((~?) 60FPS default)
     let identityMatrix = new Float32Array(16);
     glMatrix.mat4.identity(identityMatrix);
     let angle = 0;
+    let curFrame = 0;
+    let defaultFrameRate = 60;
+    let exampleCount = 0;
     let loop = () => {
+        /*
+        * 20 Ticks per Second
+        * 10 Redstone Ticks per Second
+        * */
+        curFrame %= defaultFrameRate;
+
+        if(curFrame%3 === 0) {
+            // do gameLoop
+            // TODO
+            exampleCount++;
+        }
+
+        if(exampleCount === 100) {
+
+            /// DOESN'T QUIET WORK... :(
+
+            // blocks[index3dArray(2, 2, 2, lengthX, lengthY)] = {'name' : 'smooth_stone'};
+            // !WARNING! Requires ECMAScript 6, may not work in Internet Explorer
+            // [allBlockVertices, allBlockIndices] = getBlockData(blocks, lengthX, lengthY, lengthZ);
+
+            // setBuffers(gl, allBlockVertices, allBlockIndices);
+
+            /*boxVertexBufferObject = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBlockVertices), gl.STATIC_DRAW);
+
+            boxIndexBufferObject = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBlockIndices), gl.STATIC_DRAW);*/
+
+            // console.log('Updated!')
+            exampleCount++;
+        }
+
         angle = performance.now() / 1000 / 6 * 2 * Math.PI; // 1 rotation every 6 seconds
         glMatrix.mat4.rotate(worldMatrix, identityMatrix, angle / 4, [0, 1, 0]);
 
         /*glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle / 2, [0, 1, 0]);
         glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 8, [1, 0, 0]);
         glMatrix.mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);*/
-        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
+
+        gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
 
         gl.clearColor(0.75, 0.85, 0.8, 1.0);
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
@@ -265,10 +256,131 @@ window.onload = (() => {
 
         gl.bindTexture(gl.TEXTURE_2D, null);
 
+        curFrame++;
         requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
 })
+
+function getBlockData(blocks, lengthX, lengthY, lengthZ) {
+    let allBlockVertices = [];
+    let allBlockIndices = [];
+
+    let ox = 0;
+    let oy = 0;
+    let oz = 0;
+
+    /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
+    let texCoords = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+    let count = 0;
+
+    // get blockVertices and blockIndices
+    blocks.forEach((block, index) => {
+        if(block.name === 'air') {
+            return;
+        }
+
+        ox = index % (lengthY * lengthX) % lengthX; // block.coords[0] * 2;
+        oy = ( (index - ox) % (lengthY * lengthX) ) / lengthX; // block.coords[1] * 2;
+        oz = ( index - ox - oy*lengthX ) / lengthY / lengthX; // block.coords[2] * 2;
+
+        ox *= 2;
+        oy *= 2;
+        oz *= 2;
+
+        // sets center of all (3, 3, 3) blocks at 0, 0, 0
+        ox -= lengthX - 1;
+        oy -= lengthY - 1;
+        oz -= lengthZ - 1;
+
+        texCoords.forEach((_, index) => {
+            texCoords[index] = -1;
+        })
+
+        // acacia planks: row 5, column 11
+        switch (block.name) {
+            case 'smooth_stone':
+                texCoords[0] = 20;
+                texCoords[1] = 14;
+                break;
+            case 'redstone_block':
+                texCoords[0] = 18;
+                texCoords[1] = 30;
+                break;
+            case 'redstone_dust_dot':
+                texCoords[0] = 18;
+                texCoords[1] = 31;
+                break;
+            case 'redstone_dust_line0':
+                texCoords[0] = 19;
+                texCoords[1] = 0;
+                break;
+            case 'redstone_dust_line1':
+                texCoords[0] = 19;
+                texCoords[1] = 1;
+                break;
+            case 'piston':
+                texCoords[0] = 17;
+                texCoords[1] = 4;
+
+                texCoords[2] = 17;
+                texCoords[3] = 3;
+                texCoords[4] = 17;
+                texCoords[5] = 3;
+                texCoords[6] = 17;
+                texCoords[7] = 3;
+                texCoords[8] = 17;
+                texCoords[9] = 3;
+
+                texCoords[10] = 17;
+                texCoords[11] = 1;
+                break;
+        }
+
+        texCoords = rotateTexCoords(texCoords, block.facing);
+
+        allBlockVertices = allBlockVertices.concat(singleBlockVertices(ox, oy, oz, texCoords, block.facing))
+
+        allBlockIndices = allBlockIndices.concat([
+            // Top
+            24 * count, 1 + 24 * count, 2 + 24 * count,
+            24 * count, 2 + 24 * count, 3 + 24 * count,
+
+            // Left
+            5 + 24 * count, 4 + 24 * count, 6 + 24 * count,
+            6 + 24 * count, 4 + 24 * count, 7 + 24 * count,
+
+            // Right
+            8 + 24 * count, 9 + 24 * count, 10 + 24 * count,
+            8 + 24 * count, 10 + 24 * count, 11 + 24 * count,
+
+            // Front
+            13 + 24 * count, 12 + 24 * count, 14 + 24 * count,
+            15 + 24 * count, 14 + 24 * count, 12 + 24 * count,
+
+            // Back
+            16 + 24 * count, 17 + 24 * count, 18 + 24 * count,
+            16 + 24 * count, 18 + 24 * count, 19 + 24 * count,
+
+            // Bottom
+            21 + 24 * count, 20 + 24 * count, 22 + 24 * count,
+            22 + 24 * count, 20 + 24 * count, 23 + 24 * count
+        ])
+        count++;
+    })
+
+    return [allBlockVertices, allBlockIndices];
+}
+
+function setBuffers(gl, allBlockVertices, allBlockIndices) {
+    let boxVertexBufferObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBlockVertices), gl.STATIC_DRAW);
+
+    let boxIndexBufferObject = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBlockIndices), gl.STATIC_DRAW);
+}
 
 function rotateTexCoords(texCoords, facing = 'top') {
     /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
@@ -481,4 +593,126 @@ function faceVertices(texCoords, facing, ox, oy, oz, COORDS_SCHEMA, TEX_SCHEMA) 
         COORDS_SCHEMA[6] + ox, COORDS_SCHEMA[7] + oy,  COORDS_SCHEMA[8] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[4]) / 64, (texCoords[facing*2] + TEX_SCHEMA[5]) / 32,
         COORDS_SCHEMA[9] + ox, COORDS_SCHEMA[10] + oy, COORDS_SCHEMA[11] + oz,   (texCoords[facing*2+1] + TEX_SCHEMA[6]) / 64, (texCoords[facing*2] + TEX_SCHEMA[7]) / 32
     ];
+}
+
+function updateMinecraftWorld() {
+    /// initialize some stuff (that should probably be passed in and returned later on)
+    // directional constants
+    const TOP = 0;
+    const LEFT = 1;
+    const RIGHT = 2;
+    const FRONT = 3;
+    const BACK = 4;
+    const BOTTOM = 5;
+
+    // some temporary variable to dissect result arrays
+    let results;
+
+    // array that contains all blocks
+    let lengthX = 5;
+    let lengthY = 5;
+    let lengthZ = 5;
+    let blocks = new Array(lengthX * lengthY * lengthZ);
+    blocks.forEach((_, index) => {
+        blocks[index] = {'name' : 'air'};
+    })
+    blocks[index3dArray(2, 0, 1, lengthX, lengthY)] = {'name' : 'smooth_stone'};
+    blocks[index3dArray(3, 0, 1, lengthX, lengthY)] = {'name' : 'smooth_stone'};
+    blocks[index3dArray(2, 1, 1, lengthX, lengthY)] = {'name' : 'lever', 'facing' : 'bottom', 'state' : 'off'};
+    blocks[index3dArray(3, 1, 1, lengthX, lengthY)] = {'name' : 'redstone_dust', 'facing' : [], 'powered' : []};
+    blocks = shapeRedstoneDust(blocks);
+
+    // array that contains all scheduled tasks
+    let scheduledTasks = [{'worldTicks' : 20, 'priority' : 0, 'action' : 'click', 'x' : 2, 'y' : 1, 'z' : 1, 'facing' : BOTTOM}];
+
+
+
+    // while (in scheduledTasks at least 1 task with 0 worldTicks)
+    while(isWorldTicksZero(scheduledTasks)) {
+        // go through scheduledTasks
+        scheduledTasks.forEach((task, index) => {
+            // execute every task with worldTicks = 0
+            if(task.worldTicks === 0) {
+                results = executeTask(task, blocks, lengthX, lengthY, scheduledTasks);
+                blocks = results[0];
+                scheduledTasks = results[1];
+            }
+        })
+    }
+
+
+    // go through scheduledTasks
+    scheduledTasks.forEach((_, index) => {
+        // reduce each worldTicks until execution by 1
+        scheduledTasks[index].worldTicks = scheduledTasks[index].worldTicks - 1;
+    })
+}
+
+function index3dArray(x, y, z, lengthX, lengthY) {
+    return x + y * lengthX + z * lengthX * lengthY;
+}
+
+function shapeRedstoneDust(blocks) {
+    // TODO
+
+    return blocks;
+}
+
+function executeTask(task, blocks, lengthX, lengthY, scheduledTasks) {
+    // {'worldTicks' : 20, 'priority' : 0, 'action' : 'click', 'x' : 2, 'y' : 1, 'z' : 1, 'facing' : 'bottom'}
+    // strength : strong can power blocks and hence adjacent objects, while weak can't
+    switch (task.action) {
+        case 'click':
+            let block = blocks[index3dArray(task.x, task.y, task.z, lengthX, lengthY)];
+            switch (block.name) {
+                case 'lever':
+                    if(block.state === 'off') {
+                        blocks[index3dArray(task.x, task.y, task.z, lengthX, lengthY)].state = 'on';
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'weak', 15, task.x - 1, task.y, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'weak', 15, task.x + 1, task.y, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'weak', 15, task.x, task.y - 1, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'weak', 15, task.x, task.y, task.z - 1));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'weak', 15, task.x, task.y, task.z + 1));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, true, 'strong', 15,
+                            task.x  -Math.pow(2, (block.facing+5)%6)%2  +Math.pow(2, (block.facing+4)%6)%2,
+                            task.y  +Math.pow(2, (block.facing+6)%6)%2  -Math.pow(2, (block.facing+1)%6)%2,
+                            task.z  -Math.pow(2, (block.facing+3)%6)%2  +Math.pow(2, (block.facing+2)%6)%2));
+                    } else {
+                        blocks[index3dArray(task.x, task.y, task.z, lengthX, lengthY)].state = 'on';
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'weak', 15, task.x - 1, task.y, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'weak', 15, task.x + 1, task.y, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'weak', 15, task.x, task.y - 1, task.z));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'weak', 15, task.x, task.y, task.z - 1));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'weak', 15, task.x, task.y, task.z + 1));
+                        scheduledTasks = addTask(scheduledTasks, new powerTask(0, 0, false, 'strong', 15,
+                            task.x  -Math.pow(2, (block.facing+5)%6)%2  +Math.pow(2, (block.facing+4)%6)%2,
+                            task.y  +Math.pow(2, (block.facing+6)%6)%2  -Math.pow(2, (block.facing+1)%6)%2,
+                            task.z  -Math.pow(2, (block.facing+3)%6)%2  +Math.pow(2, (block.facing+2)%6)%2));
+                    }
+                    break;
+                case 'redstone_dust':
+                    break;
+            }
+            break;
+    }
+    // TODO
+
+    return [blocks, scheduledTasks];
+}
+
+function addTask(scheduledTasks, task) {
+    // add task at the end of corresponding priority
+    // TODO
+
+    return scheduledTasks;
+}
+
+function isWorldTicksZero(scheduledTasks) {
+    scheduledTasks.forEach(task => {
+        if(task.worldTicks === 0) {
+            return true;
+        }
+    })
+
+    return false;
 }
