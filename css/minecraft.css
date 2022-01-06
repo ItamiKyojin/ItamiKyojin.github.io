@@ -1,4 +1,8 @@
 #minecraft-surface {
-    width: 800px;
+    width: 100vw;
     height: 600px;
+}
+
+body {
+    margin: 0;
 }
