@@ -1,8 +1,11 @@
 #minecraft-surface {
-    width: 100vw;
-    height: 600px;
+    position: fixed;
 }
 
 body {
-    margin: 0;
+    margin: 0 auto;
+}
+
+#foreground {
+    position: fixed;
 }
