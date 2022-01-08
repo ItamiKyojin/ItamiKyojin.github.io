@@ -2,7 +2,8 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <script src="packages/gl-matrix.js"></script>
+        <script src="packages/three.js"></script>
+        <script src="packages/OrbitControls.js"></script>
         <script type="text/javascript" src="js/minecraft.js"></script>
         <title>ItamiKyojin</title>
         <link rel="stylesheet" href="css/minecraft.css">
@@ -10,9 +11,16 @@
               href="assets/minecraft/1.18.1/minecraft/textures/block/redstone_block.png">
     </head>
     <body>
-        <canvas id="minecraft-surface">
-            Your browser does not support HTML5
-        </canvas>
-        <img id="block_atlas" src="assets/1.16_block_atlas.png" alt="block_atlas" width="0" height="0"/>
+        <canvas id="minecraft-surface"></canvas>
+        <section id="foreground">
+            <label for="x">X: </label><br>
+            <input id="x" type="number" name="x"><br>
+            <label for="y">Y: </label><br>
+            <input id="y" type="number" name="y"><br>
+            <label for="z">Z: </label><br>
+            <input id="z" type="number" name="z"><br>
+            <button id="add-smooth-stone-block"><p>Add SmoothStone Block</p></button>
+            <button id="add-stuff"><p>Add Stuff</p></button>
+        </section>
     </body>
 </html>
