@@ -1,5 +1,232 @@
 "use strict"
 
+
+// ---------- define global constants ----------
+// enums
+const DIRECTION = {
+    TOP : 0,
+    LEFT : 1,
+    RIGHT : 2,
+    FRONT : 3,
+    BACK : 4,
+    BOTTOM : 5
+}
+// math
+const DEG_TO_RAD = Math.PI/180;
+
+
+// do main
+window.onload = (() => {
+    // ---------- initiate some thee.js scene basics ----------
+    // get canvas from html
+    const canvas = document.querySelector('#minecraft-surface');
+    // create the scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0.75, 0.85, 0.8);
+    // create camera
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // create renderer
+    const renderer = new THREE.WebGLRenderer({
+        canvas : canvas
+    })
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // set initial camera
+    camera.position.set(0, .75, 5);
+
+
+    // render scene for the first time (probably unnecessary?)
+    renderer.render(scene, camera);
+
+
+    // ---------- load textures ----------
+    // create texture loader
+    const loader = new THREE.TextureLoader();
+    // create constant base path to assets
+    const BLOCK_ASSET_PART_URL = 'assets/minecraft/1.18.1/minecraft/textures/block/';
+    // load basic block textures
+    const smoothStoneTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'smooth_stone.png');
+    // load block face textures
+    const pistonTopTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_top.png');
+    const pistonTopStickyTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_top_sticky.png');
+    const pistonSideTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_side.png');
+    const pistonInnerTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_inner.png');
+    const pistonBottomTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_bottom.png');
+    // load plane textures
+    const redstoneDustDotTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'redstone_dust_dot.png');
+    const redstoneDustLine0Texture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'redstone_dust_line0.png');
+
+
+    // ---------- create materials ----------
+    // create basic materials
+    const smoothStoneMaterial = new THREE.MeshStandardMaterial( {map : smoothStoneTexture} );
+    // create multi faced materials
+    const pistonMaterials = create6FacedMaterial(pistonTopTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonBottomTexture);
+    // create multi colored material arrays
+    const redstoneDustLine0MaterialArray = [];
+    for(let i = 0; i < 16; i++) {
+        redstoneDustLine0MaterialArray.push( new THREE.MeshStandardMaterial( {map : redstoneDustLine0Texture, transparent : true, color : getRedstoneColor(i)} ) )
+    }
+
+
+    // create geometry
+    const boxGeometry = new THREE.BoxGeometry();
+    const topPlaneGeometry = new THREE.PlaneGeometry();   // only visible from atop
+    topPlaneGeometry.rotateX(-90 * DEG_TO_RAD);
+
+
+    // add 5x5 piston floor to scene
+    for(let x = -2; x < 3; x++) {
+        for(let z = -2; z < 3; z++) {
+            addMeshToScene(scene, boxGeometry, pistonMaterials, x, 0, z, DIRECTION.TOP);
+        }
+    }
+
+
+    // add lighting to scene
+    const pointLight = new THREE.PointLight(0x000000);
+    pointLight.position.set(2, 2.5, 1.8);
+
+    // somewhat minecraft light : 0xccc8cf
+    const ambientLight = new THREE.AmbientLight(0xffffff);
+
+    scene.add(pointLight, ambientLight);
+
+
+    // add helper
+    //const lightHelper = new THREE.PointLightHelper(pointLight);
+    //const gridHelper = new THREE.GridHelper(200, 50);
+
+    //scene.add(lightHelper, gridHelper);
+
+
+    // orbit controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+
+    // add block at given position on click
+    const addSmoothStoneBlockBtn = document.querySelector('#add-smooth-stone-block');
+    const addSmoothStoneBlockEventListener = () => {
+        const x = document.querySelector('#x').value;
+        const y = document.querySelector('#y').value;
+        const z = document.querySelector('#z').value;
+        addMeshToScene(scene, boxGeometry, smoothStoneMaterial, x, y, z);
+    }
+    addSmoothStoneBlockBtn.addEventListener('click', addSmoothStoneBlockEventListener)
+
+
+    // add stuff on click
+    const addStuffBtn = document.querySelector('#add-stuff');
+    const addStuffEventListener = () => {
+        // add 5 smooth stone blocks before and after floor
+        for(let z = -7; z < -2; z++) {
+            addMeshToScene(scene, boxGeometry, smoothStoneMaterial, 0, 0, z);
+        }
+        for(let z = 3; z < 8; z++) {
+            addMeshToScene(scene, boxGeometry, smoothStoneMaterial, 0, 0, z);
+        }
+
+        // add redstone line powered 1 to 15
+        for(let z = -7; z < 8; z++) {
+            addMeshToScene(scene, topPlaneGeometry, redstoneDustLine0MaterialArray[z+8], 0, 0.5 + 1/128, z);
+        }
+    }
+    addStuffBtn.addEventListener('click', addStuffEventListener);
+
+
+    // animate
+    function animate() {
+        requestAnimationFrame(animate);
+
+        controls.update();
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+})
+
+function loadTextureWithNearestFilter(loader, url) {
+    const texture = loader.load(url);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    return texture;
+}
+
+function create6FacedMaterial(topTexture, leftTexture, rightTexture, frontTexture, backTexture, bottomTexture) {
+    // Create an array of materials to be used in a cube, one for each side
+    let materialArray = [];
+
+    // order to add materials: x+,x-,y+,y-,z+,z-
+    materialArray.push( new THREE.MeshStandardMaterial( {map : leftTexture} ) );
+    materialArray.push( new THREE.MeshStandardMaterial( {map : rightTexture} ) );
+    materialArray.push( new THREE.MeshStandardMaterial( {map : topTexture} ) );
+    materialArray.push( new THREE.MeshStandardMaterial( {map : bottomTexture} ) );
+    materialArray.push( new THREE.MeshStandardMaterial( {map : frontTexture} ) );
+    materialArray.push( new THREE.MeshStandardMaterial( {map : backTexture} ) );
+
+    return new THREE.MeshFaceMaterial( materialArray );
+}
+
+function getRedstoneColor(power) {
+    // create redstone color constants
+    const BASE_REDSTONE_RED = 45;
+    const MULT_REDSTONE_RED = 14;
+    const MULT_REDSTONE_GREEN = 3;
+    const MULT_REDSTONE_BLUE = 3;
+
+
+    // mix redstone color
+    // rgb have to be multiplied by 256*256, 256 and 1 respectfully, so that they can be added together afterwards (rgb is hex and stuff, you know?)
+    return ((power*MULT_REDSTONE_RED+BASE_REDSTONE_RED)*256*256 + (power*MULT_REDSTONE_GREEN)*256 + (power*MULT_REDSTONE_BLUE));
+}
+
+// adds plane with redstone dust texture to scene
+// TODO proper, different textures
+function addRedstoneDustDotPlane(scene, power) {
+    // get texture and keep pixelated
+    const redstoneDustDotTexture = new THREE.TextureLoader().load('assets/minecraft/1.18.1/minecraft/textures/block/redstone_dust_line0.png');
+    redstoneDustDotTexture.magFilter = THREE.NearestFilter;
+    redstoneDustDotTexture.minFilter = THREE.NearestFilter;
+
+    // create plane geometry
+    const geometry = new THREE.PlaneGeometry();
+    geometry.rotateX(-90 * DEG_TO_RAD)
+
+    // set mesh parameters
+    const color = new THREE.Color((power*14+45)/255, (power*3)/255, (power*3)/255);
+    const material = new THREE.MeshStandardMaterial( {map : redstoneDustDotTexture, transparent : true, color : color.getHex()} )
+
+    // add mesh to scene
+    addMeshToScene(scene, geometry, material, 0, 0.5 + 1/128, 0);
+}
+
+function addMeshToScene(scene, geometry, material, x, y, z, facing = DIRECTION.TOP) {
+    const object = new THREE.Mesh(geometry, material);
+
+    switch(facing) {
+        case DIRECTION.LEFT:
+            object.rotateZ(90 * DEG_TO_RAD)
+            break;
+        case DIRECTION.RIGHT:
+            object.rotateZ(-90 * DEG_TO_RAD)
+            break;
+        case DIRECTION.FRONT:
+            object.rotateX(90 * DEG_TO_RAD);
+            break;
+        case DIRECTION.BACK:
+            object.rotateX(-90 * DEG_TO_RAD);
+            break;
+        case DIRECTION.BOTTOM:
+            object.rotateX(180 * DEG_TO_RAD);
+            break;
+    }
+
+    object.position.set(x, y, z)
+    scene.add(object);
+}
+
+/*
 class powerTask{
     constructor(worldTicks, priority, power, strength, level, x, y, z) {
         // EVERY!!! task has these
@@ -16,585 +243,63 @@ class powerTask{
         this.z = z;
     }
 }
+ */
 
-let vertexShaderText = [
-    'precision mediump float;',
-    '',
-    'attribute vec3 vertPosition;',
-    'attribute vec2 vertTexCoord;',
-    'varying vec2 fragTexCoord;',
-    'uniform mat4 mWorld;',
-    'uniform mat4 mView;',
-    'uniform mat4 mProj;',
-    '',
-    'void main() {',
-    '   fragTexCoord = vertTexCoord;',
-    '   gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);',
-    '}'
-].join('\n');
+/*
+// 3dBlocksArray
+// initiate array that contains all blocks filled with air 5x5x5
+let lengthX = 5;
+let lengthY = 5;
+let lengthZ = 5;
+let blocks = new Array(lengthX * lengthY * lengthZ);
+for (let i = 0; i < lengthX*lengthY*lengthZ; i++) {
+    blocks[i] = {'name' : 'air'};
+}
 
-let fragmentShaderText = [
-    'precision mediump float;',
-    '',
-    'varying vec2 fragTexCoord;',
-    'uniform sampler2D sampler;',
-    '',
-    'void main() {',
-    '   gl_FragColor = texture2D(sampler, fragTexCoord);',
-    '}'
-].join('\n');
+// set floor to smooth_stone
+for (let x = 0; x < lengthX; x++) {
+    for (let z = 0; z < lengthZ; z++) {
+        blocks[index3dArray(x, 0, z, lengthX, lengthY)] = {'name' : 'smooth_stone'};
+    }
+}
 
-window.onload = (() => {
-    let canvas = document.getElementById('minecraft-surface');
-    let gl = canvas.getContext('webgl');
+// set some other example blocks
+// blocks[index3dArray(3, 1, 1, lengthX, lengthY)] = {'name' : 'redstone_dust', 'lines' : [], 'powered' : []};
+blocks[index3dArray(1, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'left'};
+blocks[index3dArray(2, 1, 1, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'back'};
+blocks[index3dArray(3, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'right'};
+blocks[index3dArray(2, 1, 3, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'front'};
+ */
 
-    if (!gl) {
-        gl = canvas.getContext('experimental-webgl');
+/*
+// main render loop ((~?) 60FPS default)
+let curFrame = 0;
+let defaultFrameRate = 60;
+let loop = () => {
+    // 20 Ticks per Second
+    // 10 Redstone Ticks per Second
+
+    curFrame %= defaultFrameRate;
+
+    if(curFrame%3 === 0) {
+        // do gameLoop
+        // TODO
     }
 
-    if (!gl) {
-        alert('Your browser does not support WebGL');
-    }
-
-    // (next block) maybe not necessary, but makes it look WAY less pixelated
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, window.innerWidth, window.innerHeight);
-
-    gl.clearColor(0.75, 0.85, 0.8, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.frontFace(gl.CCW);
-    gl.cullFace(gl.BACK);
-
-
-    // create shaders
-    let vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-
-    gl.shaderSource(vertexShader, vertexShaderText);
-    gl.shaderSource(fragmentShader, fragmentShaderText);
-
-    gl.compileShader(vertexShader);
-    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR compiling vertex shader!', gl.getShaderInfoLog(vertexShader));
-        return;
-    }
-
-    gl.compileShader(fragmentShader);
-    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR compiling fragment shader!', gl.getShaderInfoLog(fragmentShader));
-        return;
-    }
-
-    let program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('ERROR linking program!', gl.getProgramInfoLog(program));
-        return;
-    }
-    // Leave next block uncommented only during testing!
-    gl.validateProgram(program);
-    if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
-        console.error('ERROR validating program!', gl.getProgramInfoLog(program));
-        return;
-    }
-
-
-
-    /// create buffer
-    // initiate array that contains all blocks filled with air 5x5x5
-    let lengthX = 5;
-    let lengthY = 5;
-    let lengthZ = 5;
-    let blocks = new Array(lengthX * lengthY * lengthZ);
-    for (let i = 0; i < lengthX*lengthY*lengthZ; i++) {
-        blocks[i] = {'name' : 'air'};
-    }
-
-    // set floor to smooth_stone
-    for (let x = 0; x < lengthX; x++) {
-        for (let z = 0; z < lengthZ; z++) {
-            blocks[index3dArray(x, 0, z, lengthX, lengthY)] = {'name' : 'smooth_stone'};
-        }
-    }
-
-    // set some other example blocks
-    // blocks[index3dArray(3, 1, 1, lengthX, lengthY)] = {'name' : 'redstone_dust', 'lines' : [], 'powered' : []};
-    blocks[index3dArray(1, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'left'};
-    blocks[index3dArray(2, 1, 1, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'back'};
-    blocks[index3dArray(3, 1, 2, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'right'};
-    blocks[index3dArray(2, 1, 3, lengthX, lengthY)] = {'name' : 'piston', 'facing' : 'front'};
-    // TODO blocks = shapeRedstoneDust(blocks);
-
-
-    // !WARNING! Requires ECMAScript 6, may not work in Internet Explorer
-    let [allBlockVertices, allBlockIndices] = getBlockData(blocks, lengthX, lengthY, lengthZ);
-
-    setBuffers(gl, allBlockVertices, allBlockIndices);
-
-
-    // look up where the vertex data needs to go
-    let positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
-    let texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
-
-    gl.vertexAttribPointer(
-        positionAttribLocation, // Attribute location
-        3, // Number of elements per attribute
-        gl.FLOAT, // Type of elements
-        false, // Data is normalized
-        5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-        0 // Offset from the beginning of a single vertex to this attribute
-    );
-    gl.vertexAttribPointer(
-        texCoordAttribLocation, // Attribute location
-        2, // Number of elements per attribute
-        gl.FLOAT, // Type of elements
-        false, // Data is normalized
-        5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-        3 * Float32Array.BYTES_PER_ELEMENT // Offset from the beginning of a single vertex to this attribute
-    );
-
-    // tell WebGL we want to supply data from a buffer
-    gl.enableVertexAttribArray(positionAttribLocation);
-    gl.enableVertexAttribArray(texCoordAttribLocation);
-
-
-    // create texture
-    let blockAtlasTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, blockAtlasTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, document.getElementById('block_atlas'));
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    // Tell OpenGL state machine which program should be active
-    gl.useProgram(program);
-
-    let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
-    let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
-    let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
-
-    let worldMatrix = new Float32Array(16);
-    let viewMatrix = new Float32Array(16);
-    let projMatrix = new Float32Array(16);
-    glMatrix.mat4.identity(worldMatrix);
-    glMatrix.mat4.lookAt(viewMatrix, [0, 6, -15], [0, -4, 0], [0, 1, 0])
-    glMatrix.mat4.perspective(projMatrix, glMatrix.glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-
-    gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
-    gl.uniformMatrix4fv(matViewUniformLocation, false, viewMatrix);
-    gl.uniformMatrix4fv(matProjUniformLocation, false, projMatrix);
-
-    /*let xRotationMatrix = new Float32Array(16);
-    let yRotationMatrix = new Float32Array(16);*/
-
-
-    // main render loop ((~?) 60FPS default)
-    let identityMatrix = new Float32Array(16);
-    glMatrix.mat4.identity(identityMatrix);
-    let angle = 0;
-    let curFrame = 0;
-    let defaultFrameRate = 60;
-    let exampleCount = 0;
-    let loop = () => {
-        /*
-        * 20 Ticks per Second
-        * 10 Redstone Ticks per Second
-        * */
-        curFrame %= defaultFrameRate;
-
-        if(curFrame%3 === 0) {
-            // do gameLoop
-            // TODO
-            exampleCount++;
-        }
-
-        if(exampleCount === 100) {
-
-            /// DOESN'T QUIET WORK... :(
-
-            // blocks[index3dArray(2, 2, 2, lengthX, lengthY)] = {'name' : 'smooth_stone'};
-            // !WARNING! Requires ECMAScript 6, may not work in Internet Explorer
-            // [allBlockVertices, allBlockIndices] = getBlockData(blocks, lengthX, lengthY, lengthZ);
-
-            // setBuffers(gl, allBlockVertices, allBlockIndices);
-
-            /*boxVertexBufferObject = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBlockVertices), gl.STATIC_DRAW);
-
-            boxIndexBufferObject = gl.createBuffer();
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBlockIndices), gl.STATIC_DRAW);*/
-
-            // console.log('Updated!')
-            exampleCount++;
-        }
-
-        angle = performance.now() / 1000 / 6 * 2 * Math.PI; // 1 rotation every 6 seconds
-        glMatrix.mat4.rotate(worldMatrix, identityMatrix, angle / 4, [0, 1, 0]);
-
-        /*glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle / 2, [0, 1, 0]);
-        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 8, [1, 0, 0]);
-        glMatrix.mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);*/
-
-        gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
-
-        gl.clearColor(0.75, 0.85, 0.8, 1.0);
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-
-        gl.bindTexture(gl.TEXTURE_2D, blockAtlasTexture);
-        gl.activeTexture(gl.TEXTURE0);
-
-        gl.drawElements(gl.TRIANGLES, allBlockIndices.length, gl.UNSIGNED_SHORT, 0);
-
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        curFrame++;
-        requestAnimationFrame(loop);
-    };
+    curFrame++;
     requestAnimationFrame(loop);
-})
+};
+requestAnimationFrame(loop);
+ */
 
-function getBlockData(blocks, lengthX, lengthY, lengthZ) {
-    let allBlockVertices = [];
-    let allBlockIndices = [];
+/*
+// reverse engineer 3dTo1dArrayIndices
+ox = index % (lengthY * lengthX) % lengthX; // block.coords[0] * 2;
+oy = ( (index - ox) % (lengthY * lengthX) ) / lengthX; // block.coords[1] * 2;
+oz = ( index - ox - oy*lengthX ) / lengthY / lengthX; // block.coords[2] * 2;
+ */
 
-    let ox = 0;
-    let oy = 0;
-    let oz = 0;
-
-    /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
-    let texCoords = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-    let count = 0;
-
-    // get blockVertices and blockIndices
-    blocks.forEach((block, index) => {
-        if(block.name === 'air') {
-            return;
-        }
-
-        ox = index % (lengthY * lengthX) % lengthX; // block.coords[0] * 2;
-        oy = ( (index - ox) % (lengthY * lengthX) ) / lengthX; // block.coords[1] * 2;
-        oz = ( index - ox - oy*lengthX ) / lengthY / lengthX; // block.coords[2] * 2;
-
-        ox *= 2;
-        oy *= 2;
-        oz *= 2;
-
-        // sets center of all (3, 3, 3) blocks at 0, 0, 0
-        ox -= lengthX - 1;
-        oy -= lengthY - 1;
-        oz -= lengthZ - 1;
-
-        texCoords.forEach((_, index) => {
-            texCoords[index] = -1;
-        })
-
-        // acacia planks: row 5, column 11
-        switch (block.name) {
-            case 'smooth_stone':
-                texCoords[0] = 20;
-                texCoords[1] = 14;
-                break;
-            case 'redstone_block':
-                texCoords[0] = 18;
-                texCoords[1] = 30;
-                break;
-            case 'redstone_dust_dot':
-                texCoords[0] = 18;
-                texCoords[1] = 31;
-                break;
-            case 'redstone_dust_line0':
-                texCoords[0] = 19;
-                texCoords[1] = 0;
-                break;
-            case 'redstone_dust_line1':
-                texCoords[0] = 19;
-                texCoords[1] = 1;
-                break;
-            case 'piston':
-                texCoords[0] = 17;
-                texCoords[1] = 4;
-
-                texCoords[2] = 17;
-                texCoords[3] = 3;
-                texCoords[4] = 17;
-                texCoords[5] = 3;
-                texCoords[6] = 17;
-                texCoords[7] = 3;
-                texCoords[8] = 17;
-                texCoords[9] = 3;
-
-                texCoords[10] = 17;
-                texCoords[11] = 1;
-                break;
-        }
-
-        texCoords = rotateTexCoords(texCoords, block.facing);
-
-        allBlockVertices = allBlockVertices.concat(singleBlockVertices(ox, oy, oz, texCoords, block.facing))
-
-        allBlockIndices = allBlockIndices.concat([
-            // Top
-            24 * count, 1 + 24 * count, 2 + 24 * count,
-            24 * count, 2 + 24 * count, 3 + 24 * count,
-
-            // Left
-            5 + 24 * count, 4 + 24 * count, 6 + 24 * count,
-            6 + 24 * count, 4 + 24 * count, 7 + 24 * count,
-
-            // Right
-            8 + 24 * count, 9 + 24 * count, 10 + 24 * count,
-            8 + 24 * count, 10 + 24 * count, 11 + 24 * count,
-
-            // Front
-            13 + 24 * count, 12 + 24 * count, 14 + 24 * count,
-            15 + 24 * count, 14 + 24 * count, 12 + 24 * count,
-
-            // Back
-            16 + 24 * count, 17 + 24 * count, 18 + 24 * count,
-            16 + 24 * count, 18 + 24 * count, 19 + 24 * count,
-
-            // Bottom
-            21 + 24 * count, 20 + 24 * count, 22 + 24 * count,
-            22 + 24 * count, 20 + 24 * count, 23 + 24 * count
-        ])
-        count++;
-    })
-
-    return [allBlockVertices, allBlockIndices];
-}
-
-function setBuffers(gl, allBlockVertices, allBlockIndices) {
-    let boxVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBlockVertices), gl.STATIC_DRAW);
-
-    let boxIndexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(allBlockIndices), gl.STATIC_DRAW);
-}
-
-function rotateTexCoords(texCoords, facing = 'top') {
-    /* row:r, column:c; r/cTop, r/cLeft, r/cRight, r/cFront, r/cBack, r/cBottom */
-
-    const TOP = 0;
-    const LEFT = 1;
-    const RIGHT = 2;
-    const FRONT = 3;
-    const BACK = 4;
-    const BOTTOM = 5;
-
-    switch(facing) {
-        case 'left':
-            // top -> left -> bottom -> right -> top
-            texCoords = shift4Faces(texCoords, [TOP, LEFT, BOTTOM, RIGHT]);
-            break;
-        case 'right':
-            // top -> right -> bottom -> left -> top
-            texCoords = shift4Faces(texCoords, [TOP, RIGHT, BOTTOM, LEFT]);
-            break;
-        case 'front':
-            // top -> front -> bottom -> back -> top
-            texCoords = shift4Faces(texCoords, [TOP, FRONT, BOTTOM, BACK]);
-            break;
-        case 'back':
-            // top -> front -> bottom -> back -> top
-            texCoords = shift4Faces(texCoords, [TOP, BACK, BOTTOM, FRONT]);
-            break;
-        case 'bottom':
-            // top -> front -> bottom -> back -> top
-            texCoords = shift4Faces(texCoords, [TOP, BOTTOM]);
-            break;
-    }
-
-    return texCoords;
-}
-
-function shift4Faces(texCoords, faces) {
-    let temp = [-1, -1];
-    let result;
-
-    if(faces[0] !== undefined &&
-        faces[1] !== undefined &&
-        faces[2] !== undefined &&
-        faces[3] !== undefined) {
-        // top -> temp
-        result = shiftFace(texCoords, faces[0], -1, temp, 'toTemp');
-        texCoords = result[0];
-        temp = result[1]
-        // right -> top
-        texCoords = shiftFace(texCoords, faces[3], faces[0])[0];
-        // bottom -> right
-        texCoords = shiftFace(texCoords, faces[2], faces[3])[0];
-        // left -> bottom
-        texCoords = shiftFace(texCoords, faces[1], faces[2])[0];
-        // temp -> left
-        texCoords = shiftFace(texCoords, -1, faces[1], temp, 'fromTemp')[0];
-    } else if(faces[0] !== undefined &&
-        faces[1] !== undefined) {
-        // top -> temp
-        result = shiftFace(texCoords, faces[0], -1, temp, 'toTemp');
-        texCoords = result[0];
-        temp = result[1]
-        // bottom -> top
-        texCoords = shiftFace(texCoords, faces[1], faces[0])[0];
-        // temp -> bottom
-        texCoords = shiftFace(texCoords, -1, faces[1], temp, 'fromTemp')[0];
-    }
-
-    return texCoords;
-}
-
-function shiftFace(texCoords, fromDir, toDir, temp, tempDir) {
-    // default case
-    if(temp === undefined) {
-        // fromDir -> toDir
-        texCoords[toDir * 2] = texCoords[fromDir * 2];
-        texCoords[toDir * 2 + 1] = texCoords[fromDir * 2 + 1];
-    } else if(tempDir === 'fromTemp') {
-        // temp -> toDir
-        texCoords[toDir*2] = temp[0];
-        texCoords[toDir*2+1] = temp[1];
-    } else {
-        // fromDir -> temp
-        temp[0] = texCoords[fromDir*2];
-        temp[1] = texCoords[fromDir*2+1];
-    }
-
-    return [texCoords, temp];
-}
-
-function singleBlockVertices(ox, oy, oz, texCoords, facing = 'top') {
-    // for every not specified texture, take the previous one
-    texCoords.forEach((coord, index) => {
-        if(coord === -1) {
-            texCoords[index] = texCoords[index - 2]
-        }
-    })
-
-    /*
-    * Invert U (big to small and small to big) => mirror
-    * Invert V => mirror
-    * Go 1 down => rotate left in front / right in back
-    * */
-
-    const TOP = 0;
-    const LEFT = 1;
-    const RIGHT = 2;
-    const FRONT = 3;
-    const BACK = 4;
-    const BOTTOM = 5;
-
-    const TOP_COORDS_SCHEMA = [-1, 1, -1, -1, 1, 1, 1, 1, 1, 1, 1, -1];
-    const LEFT_COORDS_SCHEMA = [-1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1];
-    const RIGHT_COORDS_SCHEMA = [1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1];
-    const FRONT_COORDS_SCHEMA = [1, 1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1];
-    const BACK_COORDS_SCHEMA = [1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1];
-    const BOTTOM_COORDS_SCHEMA = [-1, -1, -1, -1, -1, 1, 1, -1, 1, 1, -1, -1];
-
-    const A_TEX_SCHEMA = [0, 0, 0, 1, 1, 1, 1, 0];
-    const B_TEX_SCHEMA = [1, 0, 0, 0, 0, 1, 1, 1];
-    const C_TEX_SCHEMA = [0, 1, 1, 1, 1, 0, 0, 0];
-    const D_TEX_SCHEMA = [1, 1, 1, 0, 0, 0, 0, 1];
-
-    let topVertices = [];
-    let leftVertices = [];
-    let rightVertices = [];
-    let frontVertices = [];
-    let backVertices = [];
-    let bottomVertices = [];
-
-    // Top
-    switch (facing) {
-        case 'top':
-        case 'back':
-        case 'bottom':   topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'left':     topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'right':    topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'front':    topVertices = faceVertices(texCoords, TOP, ox, oy, oz, TOP_COORDS_SCHEMA, D_TEX_SCHEMA);
-    }
-
-    // Left
-    switch (facing) {
-        case 'top':
-        case 'left':
-        case 'right':    leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'front':    leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'back':     leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'bottom':   leftVertices = faceVertices(texCoords, LEFT, ox, oy, oz, LEFT_COORDS_SCHEMA, D_TEX_SCHEMA);   break;
-    }
-
-    // Right
-    switch (facing) {
-        case 'top':
-        case 'left':
-        case 'right':    rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'front':    rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'back':     rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'bottom':   rightVertices = faceVertices(texCoords, RIGHT, ox, oy, oz, RIGHT_COORDS_SCHEMA, D_TEX_SCHEMA);
-    }
-
-    // Front
-    switch (facing) {
-        case 'top':
-        case 'front':
-        case 'back':     frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'left':     frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'right':    frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'bottom':   frontVertices = faceVertices(texCoords, FRONT, ox, oy, oz, FRONT_COORDS_SCHEMA, D_TEX_SCHEMA);
-    }
-
-    // Back
-    switch (facing) {
-        case 'top':
-        case 'front':
-        case 'back':     backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'left':     backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'right':    backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'bottom':   backVertices = faceVertices(texCoords, BACK, ox, oy, oz, BACK_COORDS_SCHEMA, D_TEX_SCHEMA);
-    }
-
-    //Bottom
-    switch (facing) {
-        case 'top':
-        case 'back':
-        case 'bottom':   bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, A_TEX_SCHEMA);   break;
-        case 'left':     bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, B_TEX_SCHEMA);   break;
-        case 'right':    bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, C_TEX_SCHEMA);   break;
-        case 'front':    bottomVertices = faceVertices(texCoords, BOTTOM, ox, oy, oz, BOTTOM_COORDS_SCHEMA, D_TEX_SCHEMA);
-    }
-
-    return topVertices.concat(
-            leftVertices.concat(
-                rightVertices.concat(
-                    frontVertices.concat(
-                        backVertices.concat(
-                            bottomVertices
-                        )
-                    )
-                )
-            )
-        )
-}
-
-function faceVertices(texCoords, facing, ox, oy, oz, COORDS_SCHEMA, TEX_SCHEMA) {
-    return [
-        //X, Y, Z,                                                               U, V
-        COORDS_SCHEMA[0] + ox, COORDS_SCHEMA[1] + oy,  COORDS_SCHEMA[2] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[0]) / 64, (texCoords[facing*2] + TEX_SCHEMA[1]) / 32,
-        COORDS_SCHEMA[3] + ox, COORDS_SCHEMA[4] + oy,  COORDS_SCHEMA[5] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[2]) / 64, (texCoords[facing*2] + TEX_SCHEMA[3]) / 32,
-        COORDS_SCHEMA[6] + ox, COORDS_SCHEMA[7] + oy,  COORDS_SCHEMA[8] + oz,    (texCoords[facing*2+1] + TEX_SCHEMA[4]) / 64, (texCoords[facing*2] + TEX_SCHEMA[5]) / 32,
-        COORDS_SCHEMA[9] + ox, COORDS_SCHEMA[10] + oy, COORDS_SCHEMA[11] + oz,   (texCoords[facing*2+1] + TEX_SCHEMA[6]) / 64, (texCoords[facing*2] + TEX_SCHEMA[7]) / 32
-    ];
-}
-
+/*
 function updateMinecraftWorld() {
     /// initialize some stuff (that should probably be passed in and returned later on)
     // directional constants
@@ -647,17 +352,23 @@ function updateMinecraftWorld() {
         scheduledTasks[index].worldTicks = scheduledTasks[index].worldTicks - 1;
     })
 }
+ */
 
+/*
 function index3dArray(x, y, z, lengthX, lengthY) {
     return x + y * lengthX + z * lengthX * lengthY;
 }
+ */
 
+/*
 function shapeRedstoneDust(blocks) {
     // TODO
 
     return blocks;
 }
+ */
 
+/*
 function executeTask(task, blocks, lengthX, lengthY, scheduledTasks) {
     // {'worldTicks' : 20, 'priority' : 0, 'action' : 'click', 'x' : 2, 'y' : 1, 'z' : 1, 'facing' : 'bottom'}
     // strength : strong can power blocks and hence adjacent objects, while weak can't
@@ -699,7 +410,9 @@ function executeTask(task, blocks, lengthX, lengthY, scheduledTasks) {
 
     return [blocks, scheduledTasks];
 }
+ */
 
+/*
 function addTask(scheduledTasks, task) {
     // add task at the end of corresponding priority
     // TODO
@@ -716,3 +429,4 @@ function isWorldTicksZero(scheduledTasks) {
 
     return false;
 }
+ */
