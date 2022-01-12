@@ -3,12 +3,6 @@
 
 /*
 * TODO
-*  -make Piston class and addPiston function
-*  .  (GitHub update)
-*  -Piston state-changes
-*  -animate Pistons and following Blocks
-*  -Piston logic
-*  .  (GitHub update)
 *  -textures for missing Redstone Components
 *  .  (GitHub update)
 *  -Redstone Component classes and functions
@@ -16,6 +10,9 @@
 *  -Redstone logic
 *  .  (GitHub update)
 *  -AI Redstone construction
+*  .  (GitHub update)
+*  -fix Piston Shaft Animation
+*  -add Piston Push Limit
 *  .  (GitHub update)
 * */
 
@@ -46,8 +43,17 @@ const REDSTONE_DIRECTION = {
     BACK_BOTTOM : 12,
     BOTTOM : 13
 }
+const ANIMATE_TASK_TYPE = {
+    MOVE : 0,
+    ADD_TO_SCENE : 1,
+    REMOVE_FROM_SCENE : 2
+}
 // math
 const DEG_TO_RAD = Math.PI/180;
+const DEFAULT_FRAME_RATE = 60;
+const GAME_TICKS_PER_SECOND = 20;
+const REDSTONE_TICKS_PER_SECOND = 10;
+const FRAMES_PER_GAME_TICK = DEFAULT_FRAME_RATE / GAME_TICKS_PER_SECOND;
 
 
 // ---------- define classes ----------
@@ -152,11 +158,12 @@ class Array3dPlus {
 }
 
 class Block {
-    constructor(name, meshes = [], transparent = false, powered = new Array(6), immovable = false) {
+    constructor(name, meshes = [], transparent = false, powered = new Array(6), pushable = true, immovable = false) {
         this.name = name;
         this.meshes = meshes;
         this.transparent = transparent;
         this.powered = powered;
+        this.pushable = pushable;
         this.immovable = immovable;
     }
 
@@ -174,10 +181,12 @@ class Block {
 }
 
 class RedstoneDust {
-    constructor(meshes = [], powered = new Array(14), maxPower = 0) {
+    constructor(meshes = [], powered = new Array(14), maxPower = 0, pushable = false, immovable = false) {
         this.meshes = meshes;
         this.powered = powered;
         this.maxPower = maxPower;
+        this.pushable = pushable;
+        this.immovable = immovable;
     }
 
     power(redstoneDirection, power) {
@@ -202,11 +211,54 @@ class RedstoneDust {
 }
 
 class Piston {
-    constructor(meshes = [], facing = DIRECTION.TOP, powered = false, extended = false) {
+    constructor(meshes = [], facing = DIRECTION.TOP, powered = false, extended = false, pushable = true, immovable = false) {
         this.meshes = meshes;
         this.facing = facing;
         this.powered = powered;
         this.extended = extended;
+        this.pushable = pushable;
+        this.immovable = immovable;
+    }
+}
+
+class PistonHead {
+    constructor(meshes = [], facing = DIRECTION.TOP, pushable = true, immovable = false) {
+        this.meshes = meshes;
+        this.facing = facing;
+        this.pushable = pushable;
+        this.immovable = immovable;
+    }
+}
+
+class AnimateMoveTask {
+    constructor(meshes, disX, disY, disZ, frames) {
+        this.type = ANIMATE_TASK_TYPE.MOVE;
+        this.meshes = meshes;
+        this.disX = disX;
+        this.disY = disY;
+        this.disZ = disZ;
+        this.frames = frames;
+        this.framesPassed = 0;
+    }
+}
+
+class AddToSceneTask {
+    constructor(meshes, scene, frames) {
+        this.type = ANIMATE_TASK_TYPE.ADD_TO_SCENE;
+        this.meshes = meshes;
+        this.scene = scene;
+        this.frames = frames;
+        this.framesPassed = 0;
+    }
+}
+
+class RemoveFromSceneTask {
+    constructor(meshes, scene, frames) {
+        this.type = ANIMATE_TASK_TYPE.REMOVE_FROM_SCENE;
+        this.meshes = meshes;
+        this.scene = scene;
+        this.frames = frames;
+        this.framesPassed = 0;
     }
 }
 
@@ -291,8 +343,9 @@ window.onload = (() => {
     topPlaneGeometry.rotateX(-90 * DEG_TO_RAD);
 
 
-    // initiate blocks array
+    // initiate some array
     const blocks = new Array3dPlus();
+    const animations = [];
 
 
     // ---------- define functions requiring specific textures, materials, geometry and/or blocks ----------
@@ -312,10 +365,46 @@ window.onload = (() => {
     }
 
     function addPiston(x, y, z, facing = DIRECTION.TOP) {
+        const PISTON_HEAD_OFFSET = 3/8;
+        const PISTON_SHAFT_OFFSET = -1/4;
+        const PISTON_BASE_OFFSET = -1/8;
+
+        let xOffset = (offset) => {
+            if(facing === DIRECTION.RIGHT) return offset;
+            if(facing === DIRECTION.LEFT) return -offset;
+            return 0;
+        }
+
+        let yOffset = (offset) => {
+            if(facing === DIRECTION.TOP) return offset;
+            if(facing === DIRECTION.BOTTOM) return -offset;
+            return 0;
+        }
+
+        let zOffset = (offset) => {
+            if(facing === DIRECTION.FRONT) return offset;
+            if(facing === DIRECTION.BACK) return -offset;
+            return 0;
+        }
+
         blocks.set(
             x, y, z,
-            new Piston([addMeshToScene(scene, boxGeometry, pistonMaterials, x, y, z, facing)], facing)
-        )
+            new Piston([
+                addMeshToScene(scene, boxGeometry, pistonMaterials, x, y, z, facing),
+                createMesh(pistonBaseGeometry, pistonBaseMaterials,
+                    x + xOffset(PISTON_BASE_OFFSET),
+                    y + yOffset(PISTON_BASE_OFFSET),
+                    z + zOffset(PISTON_BASE_OFFSET), facing),
+                createMesh(shaftGeometry, pistonMaterials,
+                    x + xOffset(PISTON_SHAFT_OFFSET),
+                    y + yOffset(PISTON_SHAFT_OFFSET),
+                    z + zOffset(PISTON_SHAFT_OFFSET), facing),
+                createMesh(pistonHeadGeometry, pistonHeadMaterials,
+                    x + xOffset(PISTON_HEAD_OFFSET),
+                    y + yOffset(PISTON_HEAD_OFFSET),
+                    z + zOffset(PISTON_HEAD_OFFSET), facing)
+            ], facing)
+        );
     }
 
 
@@ -323,10 +412,7 @@ window.onload = (() => {
     for(let x = -2; x < 3; x++) {
         for(let z = -2; z < 3; z++) {
             //addSmoothStoneBlock(x, 0, z);
-            addPiston(x, 0, z);
-            /*addMeshToScene(scene, pistonHeadGeometry, pistonHeadMaterials, x, 1+3/8, z, DIRECTION.TOP);
-            addMeshToScene(scene, shaftGeometry, pistonMaterials, x, 3/4, z, DIRECTION.TOP);
-            addMeshToScene(scene, pistonBaseGeometry, pistonBaseMaterials, x, -1/8, z, DIRECTION.TOP);*/
+            addPiston(x, 0, z, DIRECTION.TOP);
         }
     }
 
@@ -355,9 +441,9 @@ window.onload = (() => {
     // add block at given position on click
     const addSmoothStoneBlockBtn = document.querySelector('#add-smooth-stone-block');
     const addSmoothStoneBlockEventListener = () => {
-        const x = document.querySelector('#x').value;
-        const y = document.querySelector('#y').value;
-        const z = document.querySelector('#z').value;
+        const x = parseInt(document.querySelector('#x').value);
+        const y = parseInt(document.querySelector('#y').value);
+        const z = parseInt(document.querySelector('#z').value);
         addSmoothStoneBlock(x, y, z);
     }
     addSmoothStoneBlockBtn.addEventListener('click', addSmoothStoneBlockEventListener)
@@ -385,27 +471,144 @@ window.onload = (() => {
 
 
     // remove all meshes from scene on click
-    const removeMeshesBtn = document.querySelector('#remove-meshes');
+    /*const removeMeshesBtn = document.querySelector('#remove-meshes');
     const removeMeshesEventListener = () => {
         removeAllMeshesFromScene(blocks, scene);
     }
-    removeMeshesBtn.addEventListener('click', removeMeshesEventListener);
+    removeMeshesBtn.addEventListener('click', removeMeshesEventListener);*/
 
 
     // add all meshes to scene on click
-    const addMeshesBtn = document.querySelector('#add-meshes');
+    /*const addMeshesBtn = document.querySelector('#add-meshes');
     const addMeshesEventListener = () => {
         addAllMeshesToScene(blocks, scene);
     }
-    addMeshesBtn.addEventListener('click', addMeshesEventListener);
+    addMeshesBtn.addEventListener('click', addMeshesEventListener);*/
+
+
+    // remove all meshes from scene on click
+    const actPistonBtn = document.querySelector('#extend-retract-piston');
+    const actPistonEventListener = () => {
+        // get piston @002
+        let x, y, z;
+        [x, y, z] = [0, 0, 2];
+        const piston = blocks.get(x, y, z);
+
+        // get directional x y z
+        let dirX, dirY, dirZ;
+        [dirX, dirY, dirZ] = directionToArrayXYZ(piston.facing);
+
+        // either extend or retract
+        if(!piston.extended) {
+            // ---------- extend ----------
+            // power piston
+            piston.powered = true;
+
+            // piston logic
+            let extendable;
+            let moveBlocks = [];
+            [extendable,  moveBlocks] = pistonLogic(blocks, scene, x, y, z, dirX, dirY, dirZ);
+
+            // extend piston
+            if(extendable) {
+                // update piston state
+                piston.extended = true;
+                piston.immovable = true;
+
+                // move other blocks
+                moveBlocks.reverse();
+                moveBlocks.forEach((block, index) => {
+                    let offsetMultiplier = (moveBlocks.length+1-index);
+                    blocks.set(x + dirX * offsetMultiplier, y + dirY * offsetMultiplier, z + dirZ * offsetMultiplier, block);
+                    animations.push(new AnimateMoveTask(block.meshes, dirX, dirY, dirZ, 2 * FRAMES_PER_GAME_TICK));
+                });
+
+                // remove base piston mesh
+                scene.remove(piston.meshes[0]);
+
+                // add extended piston meshes
+                scene.add(piston.meshes[1]);
+                scene.add(piston.meshes[2]);
+                scene.add(piston.meshes[3]);
+
+                // move meshes from piston to pistonHead
+                const pistonHeadMeshes = [];
+                pistonHeadMeshes.push(piston.meshes.pop());
+                pistonHeadMeshes.push(piston.meshes.pop());
+                blocks.set(x + dirX, y + dirY, z + dirZ, new PistonHead(pistonHeadMeshes, piston.facing));
+
+                // move pistonHeadMeshes up
+                animations.push(new AnimateMoveTask(pistonHeadMeshes, dirX, dirY, dirZ, 2 * FRAMES_PER_GAME_TICK));
+            }
+        } else {
+            // ---------- retract ----------
+            // get directional x y z
+            let dirX, dirY, dirZ;
+            [dirX, dirY, dirZ] = directionToArrayXYZ(piston.facing);
+
+            // get pistonHead
+            const pistonHead = blocks.get(x+dirX, y+dirY, z+dirZ);
+
+            // depower piston
+            piston.powered = false;
+            piston.extended = false;
+            piston.immovable = false;
+
+            // add base piston mesh
+            animations.push(new AddToSceneTask([piston.meshes[0]], scene, 2 * FRAMES_PER_GAME_TICK))
+
+            // remove extended piston meshes
+            animations.push(new RemoveFromSceneTask(
+                [piston.meshes[1], pistonHead.meshes[0], pistonHead.meshes[1]],
+                scene,
+                2 * FRAMES_PER_GAME_TICK)
+            )
+
+            // move meshes from pistonHead to piston
+            piston.meshes.push(pistonHead.meshes.pop());
+            piston.meshes.push(pistonHead.meshes.pop());
+
+            // remove pistonHead from blocks
+            blocks.set(x+dirX, y+dirY, z+dirZ, undefined);
+
+            // move pistonHeadMeshes (now again pistonMeshes) down
+            animations.push(new AnimateMoveTask([piston.meshes[2], piston.meshes[3]], -dirX, -dirY, -dirZ, 2 * FRAMES_PER_GAME_TICK));
+        }
+    }
+    actPistonBtn.addEventListener('click', actPistonEventListener);
 
 
     // animate
+    let curFrame = 0;
     function animate() {
+        // loop
         requestAnimationFrame(animate);
 
+
+        // logic
+        curFrame %= DEFAULT_FRAME_RATE;
+
+        // act once every game tick
+        if(curFrame%3 === 0) {
+            // do gameLoop
+            // TODO
+        }
+
+        // animate (act every frame)
+        animations.forEach((animateTask, index) => {
+            // do animation and check, whether it has been completed
+            if(doAnimation(animateTask)) {
+                animations.splice(index, 1);
+            }
+        })
+
+        curFrame++;
+
+
+        // update controls
         controls.update();
 
+        // render scene
         renderer.render(scene, camera);
     }
 
@@ -471,7 +674,7 @@ function create6FacedMaterial(topTexture, leftTexture, rightTexture, frontTextur
     materialArray.push( new THREE.MeshStandardMaterial( {map : frontTexture} ) );
     materialArray.push( new THREE.MeshStandardMaterial( {map : backTexture} ) );
 
-    return new THREE.MeshFaceMaterial( materialArray );
+    return  materialArray;
 }
 
 function getRedstoneColor(power) {
@@ -493,6 +696,14 @@ function getRedstoneColor(power) {
 }
 
 function addMeshToScene(scene, geometry, material, x, y, z, facing = DIRECTION.TOP) {
+    const mesh = createMesh(geometry, material, x, y, z, facing);
+
+    scene.add(mesh);
+
+    return mesh;
+}
+
+function createMesh(geometry, material, x, y, z, facing = DIRECTION.TOP) {
     const mesh = new THREE.Mesh(geometry, material);
 
     switch(facing) {
@@ -504,9 +715,16 @@ function addMeshToScene(scene, geometry, material, x, y, z, facing = DIRECTION.T
     }
 
     mesh.position.set(x, y, z)
-    scene.add(mesh);
 
     return mesh;
+}
+
+function destroyBlock(blocks, scene, x, y, z) {
+    const block = blocks.get(x, y, z);
+    block.meshes.forEach(mesh => {
+        scene.remove(mesh);
+    })
+    blocks.set(x, y, z, undefined);
 }
 
 function addAllMeshesToScene(blocks, scene) {
@@ -528,6 +746,122 @@ function removeAllMeshesFromScene(blocks, scene) {
         })
     }
 }
+
+function pistonLogic(blocks, scene, x, y, z, dirX, dirY, dirZ) {
+    let extendable;
+    let moveBlocks = [];
+    let counter = 1;
+
+    while(true) {
+        // look at first block in direction
+        let curBlock = blocks.get(x + dirX*counter, y + dirY*counter, z + dirZ*counter);
+        // air? => extendable = true
+        if (curBlock === undefined) {
+            extendable = true;
+            break;
+        }
+        // immovable? => extendable = false
+        if (curBlock.immovable) {
+            extendable = false;
+            break;
+        }
+        // pushable? => destroy + extendable true
+        if (!curBlock.pushable) {
+            destroyBlock(blocks, scene, x + dirX*counter, y + dirY*counter, z + dirZ*counter);
+            extendable = true;
+            break;
+        } else {
+            // normal block? => add to moveBlocks[] + look at next block in direction
+            moveBlocks.push(curBlock);
+        }
+        counter++;
+    }
+
+    return [extendable,  moveBlocks];
+}
+
+function directionToArrayXYZ(facing) {
+    switch(facing) {
+        case DIRECTION.TOP: return [0, 1, 0];
+        case DIRECTION.LEFT: return [-1, 0, 0];
+        case DIRECTION.RIGHT: return [1, 0, 0];
+        case DIRECTION.FRONT: return [0, 0, 1];
+        case DIRECTION.BACK: return [0, 0, -1];
+        case DIRECTION.BOTTOM: return [0, -1, 0];
+    }
+}
+
+
+// functions in animate loop
+function doAnimation(animateTask) {
+    // get frames from animationTask
+    let framesPassed = animateTask.framesPassed;
+    let frames = animateTask.frames;
+
+    // failsafe
+    if(framesPassed >= frames) {
+        console.log('Failsafe reached!')
+        return;
+    }
+
+    // do animation
+    let lastFrameReached;
+    switch(animateTask.type) {
+        case ANIMATE_TASK_TYPE.MOVE:
+            let curX, curY, curZ, disX, disY, disZ, toX, toY, toZ;
+            [disX, disY, disZ] = [animateTask.disX, animateTask.disY, animateTask.disZ]
+            animateTask.meshes.forEach(mesh => {
+                // get mesh and coordinates
+                [curX, curY, curZ] = [mesh.position.x, mesh.position.y, mesh.position.z]
+
+                // calculate target coordinates
+                toX = curX + disX/frames;
+                toY = curY + disY/frames;
+                toZ = curZ + disZ/frames;
+
+                // update position
+                mesh.position.set(toX, toY, toZ);
+            })
+
+            // update framesPassed
+            animateTask.framesPassed += 1;
+
+            // return, whether task has been completely executed
+            return framesPassed+1 >= frames;
+            break;
+        case ANIMATE_TASK_TYPE.ADD_TO_SCENE:
+            // update framesPassed
+            animateTask.framesPassed += 1;
+
+            // animate, once frames have passed
+            lastFrameReached = framesPassed+1 >= frames;
+            if(lastFrameReached) {
+                animateTask.meshes.forEach(mesh => {
+                    animateTask.scene.add(mesh)
+                })
+            }
+
+            // return, whether task has been completely executed
+            return lastFrameReached;
+            break;
+        case ANIMATE_TASK_TYPE.REMOVE_FROM_SCENE:
+            // update framesPassed
+            animateTask.framesPassed += 1;
+
+            // animate, once frames have passed
+            lastFrameReached = framesPassed+1 >= frames;
+            if(lastFrameReached) {
+                animateTask.meshes.forEach(mesh => {
+                    animateTask.scene.remove(mesh)
+                })
+            }
+
+            // return, whether task has been completely executed
+            return lastFrameReached;
+            break;
+    }
+}
+
 
 /*
 class powerTask{
