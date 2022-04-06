@@ -1,0 +1,91 @@
+html {
+    background:
+        url(../assets/eldenring/background/Great_Rune_4050_2278_alpha_15.png),
+        linear-gradient(
+            to right,
+            rgba(100, 100, 90, 1),
+            rgba(100, 100, 90, 1),
+            rgba(100, 100, 90, 1),
+            rgba(100, 100, 90, 0.9),
+            rgba(100, 100, 90, 0.9),
+            rgba(100, 100, 90, 0.9),
+            rgba(100, 100, 90, 0.9)
+        ),
+        url(../assets/eldenring/background/Abductor_Virgins.jpg); /*no-repeat center center fixed;*/
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+div {
+    color: white;
+}
+
+.float-right {
+    float: right;
+}
+
+.float-left {
+    float: left;
+}
+
+#outercontainer {
+    margin: 0 auto;
+    max-width: 1030px;
+}
+
+.er-planner {
+    display: grid;
+    grid-template-columns: 33.33333% 33.33333% 33.33333%;
+}
+
+.er-column {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.armor-optimizer {
+    width: 20px;
+    height: 20px;
+}
+
+.stat-box input.fixed, .stat-box input.editable {
+    margin-left: 6px;
+    float: right;
+}
+
+input.fixed, input.editable {
+    width: 38px;
+    text-align: center;
+}
+
+.stat-box {
+    line-height: 25px;
+}
+
+.stat-box.tall {
+    line-height: 28px;
+}
+
+input.fixed.big {
+    width: 75px;
+}
+
+.armor-region select {
+    width: 200px;
+}
+
+/* Force ArmorSelects and their Labels to be in the same row */
+.armor-region {
+    display: grid;
+    grid-template-rows: auto auto auto auto;
+}
+
+/*.armor-region div .stat-box {
+    display: grid;
+    grid-template-columns: 33.33333% 66.66667%;
+}*/
+
+.right-column input {
+    width: 90px;
+}
