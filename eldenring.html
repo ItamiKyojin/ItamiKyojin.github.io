@@ -2,8 +2,15 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <script type="text/javascript" src="js/db.js"></script>
-        <script type="text/javascript" src="js/eldenring.js"></script>
+
+        <!-- give all select elements a search option -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" />
+        <!--script type="module" src="./js/eldenring.js"></script-->
+        <script type="text/javascript" src="js/eldenring/db.js"></script>
+        <script type="text/javascript" src="./js/eldenring/states.js"></script>
+        <script type="text/javascript" src="./js/eldenring.js"></script>
         <title>Elden Ring</title>
         <!-- link rel="stylesheet" href="css/eldenring.css" -->
         <link rel="stylesheet" href="css/eldenring-min.css">
@@ -11,168 +18,312 @@
               href="assets/elden_ring_icon_contrast_up.png">
     </head>
     <body>
-        <header>
+        <!--header>
             <a href="index.html">Minecraft</a>
             <a href="eldenring.html">Elden Ring</a>
+        </header-->
+        <header>
+            <img class="status-icon float-left" src="assets/eldenring/icon/status_bright_60.png">
+            <div class="status-label">Status</div>
         </header>
-
-        <div id="outercontainer">
-            <div class="cpadding">
-                <!-- some other stuff -->
-                <div class="logo">
-                    <div>
-                        <a href="eldenring.html"><img alt="Elden Ring Character Planner" src="https://mugenmonkey.com/assets/eldenring-abcb8f237556de9f6c96d28616aafd4f61c48ee379e1f5b065d885421f81cbaa.png"></a>
-                    </div>
-                </div>
-                <!-- some other stuff -->
-                <div class="er-planner-region">
-                    <!-- everything is inside another div with some event -->
-                    <div id="er-container" class="mobile-grind-container">
-                        <!-- some stuff -->
-                        <div class="container">
-                            <div class="build-info-region"></div>
-                            <div class="container c-body er-planner clearfix">
-                                <div class="grid-33 er-column left-column-region">
-                                    <!-- everything is inside another div with some event -->
-                                    <div class="clearfix stat-box tall">
-                                        Name
-                                        <input type="text" class="build-title er-title">
-                                    </div>
-                                    <div class="clearfix stat-box tall">
-                                        Class
-                                        <div class="float-right class-selection-region"></div>
-                                    </div>
-                                    <div class="clearfix stat-box tall">
-                                        Gender
-                                        <div class="float-right gender-selection-region">
-                                            <select class="dropdown-select">
-                                                <option value="Male"> Male </option>
-                                                <option value="Female"> Female </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="clearfix stat-box tall">
-                                        Great Runes
-                                        <div class="float-right great-rune-selection-region">
-                                            <select class="dropdown-select">
-                                                <option value="Godrick's Great Rune"> Godrick's Great Rune </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                                <option value="???"> ??? </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="levelable-stats-region">
-                                        <div class="ds3-header"></div>
-                                        <div class="clearfix stat-box er-box-with-border">
-                                            <label for="level" class="no-click">
-                                                <img src="" class="er-sprite er-sprite-level">
-                                                Level
-                                            </label>
-                                            <input type="text" class="fixed " id="level" maxlength="3" readonly="">
-                                            <input type="text" class="fixed" id="level-fixed" readonly="">
-                                            <div id="revert-er">
-                                                <img src="" class="stat-icons" title="Revert">
-                                            </div>
-                                        </div>
-                                        <!-- js will add additional stat divs here -->
-                                    </div>
-                                    <div class="er-header"></div>
-                                    <div class="clearfix stat-box">
-                                        <label for="total-runes">
-                                            <img src="" class="er-sprite er-sprite-runes">
-                                            Total Runes
-                                        </label>
-                                        <input type="text" class="fixed big" id="total-runes" readonly="">
-                                    </div>
-                                    <div class="clearfix stat-box">
-                                        <label for="required-runes">
-                                            <img src="" class="er-sprite er-sprite-required-runes">
-                                            Required Runes
-                                        </label>
-                                        <input type="text" class="fixed big" id="required-runes" readonly="">
-                                    </div>
-                                    <div class="er-header">Tools</div>
-                                    <img class="er-sprite armor-optimizer" src="https://mugenmonkey.com/assets/_t.png" title="Armor Optimizer">
-                                    <!-- TODO Tools -->
+        <div class="stat-box tall">
+            <input id="name" type="text" placeholder="Enter a Name" class="build-title er-title">
+            <div class="cust-underline"></div>
+        </div>
+        <div class="er-planner-region">
+            <div>
+                <div class="build-info-region"></div>
+                <div class="er-planner">
+                    <div class="planner-column left-column-region">
+                        <div class="heading-spacer"></div>
+                        <div>
+                            <div class="cust-vertline height-84px"></div>
+                            <div>
+                                <div class="stat-box tall">
+                                    Class
+                                    <div class="float-right class-selection-region"></div>
                                 </div>
-                                <div class="grid-33 er-column middle-column-region">
-                                    <!-- everything is inside another div -->
-                                    <div class="armor-region">
-                                        <!-- everything is inside another div -->
-                                        <div class="stat-box tall">
-                                            <div class="float-left">
-                                                <label class="armorTitle" for="head">Head</label>
-                                            </div>
-                                            <div class="float-right">
-                                                <div class="head-dropdown-region"></div>
-                                            </div>
-                                        </div>
-                                        <div class="clearfix"></div>
-                                        <div class="stat-box tall">
-                                            <div class="float-left">
-                                                <label class="armorTitle" for="chest">Chest</label>
-                                            </div>
-                                            <div class="float-right">
-                                                <div class="chest-dropdown-region"></div>
-                                            </div>
-                                        </div>
-                                        <div class="clearfix"></div>
-                                        <div class="stat-box tall">
-                                            <div class="float-left">
-                                                <label class="armorTitle" for="hands">Hands</label>
-                                            </div>
-                                            <div class="float-right">
-                                                <div class="hands-dropdown-region"></div>
-                                            </div>
-                                        </div>
-                                        <div class="clearfix"></div>
-                                        <div class="stat-box tall">
-                                            <div class="float-left">
-                                                <label class="armorTitle" for="legs">Legs</label>
-                                            </div>
-                                            <div class="float-right">
-                                                <div class="legs-dropdown-region"></div>
-                                            </div>
-                                        </div>
-                                        <div class="clearfix"></div>
-                                        <div class="er-spacer"></div>
+                                <div class="stat-box tall">
+                                    Gender
+                                    <div class="float-right gender-selection-region">
+                                        <select class="dropdown-select">
+                                            <option value="Male"> Male </option>
+                                            <option value="Female"> Female </option>
+                                        </select>
                                     </div>
-                                    <div class="talismans-region"></div>
-                                    <div class="weapon-region"></div>
-                                    <div class="active-effects-region"></div>
                                 </div>
-                                <div class="grid-33 er-column right-column-region">
-                                    <div class="right-column">
-                                        <div class="base-stats-region">
-                                            <!-- everything is inside another div -->
-                                        </div>
-                                        <div class="defense-region">
-                                            <!-- everything is inside another div -->
-                                        </div>
-                                        <div class="resistance-region">
-                                            <!-- everything is inside another div -->
-                                        </div>
+                                <div class="stat-box tall">
+                                    Great Runes
+                                    <div class="float-right great-rune-selection-region">
+                                        <select class="dropdown-select">
+                                            <option value="Godrick's Great Rune"> Godrick's Great Rune </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                            <option value="???"> ??? </option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            <div class="container c-items er-spells-region align-center clearfix"></div>
                         </div>
-                        <div class="container c-footer clearfix"></div>
-                        <!-- 2 divs for whatever reason -->
+
+                        <div class="attribute-region">
+                            <div class="header">
+                                <img class="icon-small float-left" src="assets/eldenring/icon/attribute_points_cut_bright_60.png">
+                                <div class="header-label">Attribute Points</div>
+                            </div>
+                            <div class="cust-vertline"></div>
+                            <div class="stat-box er-box-with-border">
+                                <label for="level" class="no-click">
+                                    <img src="" class="er-sprite er-sprite-level">
+                                    Level
+                                </label>
+                                <input type="text" class="fixed" id="level-final" readonly="">
+                                <input type="text" class="fixed" id="level-editable" maxlength="3" readonly="">
+                                <input type="text" class="fixed" id="level-class" readonly="">
+                                <div class="spacer"></div>
+                            </div>
+                            <!-- js will add additional stat divs here -->
+                        </div>
+
+                        <div class="runes-region">
+                            <div class="stat-box">
+                                <label for="total-runes">
+                                    <img src="" class="er-sprite er-sprite-runes">
+                                    Total Runes
+                                </label>
+                                <input type="text" class="fixed big" id="total-runes" readonly="">
+                            </div>
+                            <div class="stat-box">
+                                <label for="required-runes">
+                                    <img src="" class="er-sprite er-sprite-required-runes">
+                                    Required Runes
+                                </label>
+                                <input type="text" class="fixed big" id="required-runes" readonly="">
+                            </div>
+                        </div>
+
+                        <div class="er-header">Tools</div>
+                        <img class="er-sprite armor-optimizer" src="https://mugenmonkey.com/assets/_t.png" title="Armor Optimizer">
+                        <!-- TODO Tools -->
                     </div>
-                    <div class="armor-optimizer-region">
-                        <!-- everything is inside another div with some event -->
-                        <div class="mobile-grid-container">
-                            <div id=""></div>
+                    <div class="planner-column middle-column-region">
+                        <div class="armor-region">
+                            <div class="header">
+                                <div class="header-label">Armor</div>
+                            </div>
+
+                            <div>
+                                <div class="cust-vertline float-left height-112px position-absolute"></div>
+                            </div>
+
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="head">Head</label>
+                                </div>
+                                <div class="float-right">
+                                    <div class="head-dropdown-region"></div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="chest">Chest</label>
+                                </div>
+                                <div class="float-right">
+                                    <div class="chest-dropdown-region"></div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="hands">Hands</label>
+                                </div>
+                                <div class="float-right">
+                                    <div class="hands-dropdown-region"></div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="legs">Legs</label>
+                                </div>
+                                <div class="float-right">
+                                    <div class="legs-dropdown-region"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="talismans-region">
+                            <div class="header">
+                                <div class="header-label">Talismans</div>
+                            </div>
+
+                            <div>
+                                <div class="cust-vertline float-left height-112px position-absolute"></div>
+                            </div>
+
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="talisman1">Talisman #1</label>
+                                </div>
+
+                                <div class="float-right">
+                                    <div class="talisman1-region">
+                                        <select class="dropdown-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="talisman2">Talisman #2</label>
+                                </div>
+
+                                <div class="float-right">
+                                    <div class="talisman2-region">
+                                        <select class="dropdown-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="talisman3">Talisman #3</label>
+                                </div>
+
+                                <div class="float-right">
+                                    <div class="talisman3-region">
+                                        <select class="dropdown-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div class="float-left">
+                                    <label class="armorTitle" for="talisman4">Talisman #4</label>
+                                </div>
+
+                                <div class="float-right">
+                                    <div class="talisman4-region">
+                                        <select class="dropdown-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weapon-region">
+                            <div class="header">
+                                <div class="header-label">Weapons</div>
+                            </div>
+
+                            <div>
+                                <div class="cust-vertline float-left height-84px position-absolute"></div>
+                            </div>
+
+                            <div class="stat-box tall">
+                                <div>
+                                    <label for="lh1">LH1</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="rh1">RH1</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div>
+                                    <label for="lh2">LH2</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="rh2">RH2</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-box tall">
+                                <div>
+                                    <label for="lh3">LH3</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="rh3">RH3</label>
+                                    <div class="weapon-dropdown-region">
+                                        <select>
+                                            <option>Bare Fist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="active-effects-region">
+                            <div class="header">
+                                <div class="header-label">Effects</div>
+                            </div>
+
+                            <ul class="stat er-effects-box"></ul>
                         </div>
                     </div>
+                    <div class="planner-column right-column-region">
+                        <div class="right-column">
+                            <div class="base-stats-region">
+                                <div class="header">
+                                    <img class="icon-small float-left" src="assets/eldenring/icon/base_stats_cut_bright_60.png">
+                                    <div class="header-label">Base Stats</div>
+                                </div>
+
+                                <div>
+                                    <div class="cust-vertline float-left height-150px position-absolute"></div>
+                                </div>
+                            </div>
+                            <div class="defense-region">
+                                <div class="header">
+                                    <img class="icon-small float-left" src="assets/eldenring/icon/defense_dmg_negation_cut_bright_60.png">
+                                    <div class="header-label">Defense/Dmg Negation</div>
+                                </div>
+
+                                <div>
+                                    <div class="cust-vertline float-left height-200px position-absolute"></div>
+                                </div>
+                            </div>
+                            <div class="resistance-region">
+                                <div class="header">
+                                    <img class="icon-small float-left" src="assets/eldenring/icon/resistance_cut_bright_60.png">
+                                    <div class="header-label">Resistance</div>
+                                </div>
+
+                                <div>
+                                    <div class="cust-vertline float-left height-100px position-absolute"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="spells-region"></div>
+            </div>
+            <div class="armor-optimizer-region">
+                <!-- everything is inside another div with some event -->
+                <div class="mobile-grid-container">
+                    <div id=""></div>
                 </div>
             </div>
         </div>
