@@ -1,5 +1,10 @@
 "use strict"
 
+// TODO change focus b
+//  orders
+
+// import {headsJSON, chestsJSON, handsJSON, legsJSON, talismansJSON} from './db.js';
+
 // Allgemein kommenieren
 
 // TODO level changes reset on class change
@@ -837,42 +842,40 @@ const classesJSON = {
     ]
 }
 
-const statsJSON = {
-    "stats" : [
-        {
-            "label" : "vigor",
-            "flavortext" : "Attribute governing HP. Also affects fire resistance and Immunity stat. Soft-capped at 40: returns diminish greatly after 40 points."
-        },
-        {
-            "label" : "mind",
-            "flavortext" : "Attribute governing FP. Also affects the Focus stat."
-        },
-        {
-            "label" : "endurance",
-            "flavortext" : "Attribute governing Stamina. Also affects Robustness. This attribute also determines how heavy your equipment can be. Soft-capped for stamina at 50 and maximum equip load at 60: returns diminish greatly after those points."
-        },
-        {
-            "label" : "strength",
-            "flavortext" : "Attribute required to wield heavy armaments. Also boosts attacks power of strength-scaling armaments and affects your Physical Defense."
-        },
-        {
-            "label" : "dexterity",
-            "flavortext" : "Attribute required to wield advanced armaments. Also boosts attack power of dexterity-scaling armaments, reduces casting time of Spells, softens fall damage, and makes it harder to be knocked off your horse."
-        },
-        {
-            "label" : "intelligence",
-            "flavortext" : "Attribute required to perform glintstone sorceries. Also boosts magic power of intelligence-scaling Sorceries and improves Magic Resistance."
-        },
-        {
-            "label" : "faith",
-            "flavortext" : "Attribute required to perform sacred Incantations. Also boosts magic power of faith-scaling Incantations."
-        },
-        {
-            "label" : "arcane",
-            "flavortext" : "Attribute governing Discovery. Also affects Holy Defense, Vitality, and certain Sorceries and Incantations."
-        }
-    ]
-};
+const attributesJSON = [
+    {
+        "label" : "vigor",
+        "flavortext" : "Attribute governing HP. Also affects fire resistance and Immunity stat. Soft-capped at 40: returns diminish greatly after 40 points."
+    },
+    {
+        "label" : "mind",
+        "flavortext" : "Attribute governing FP. Also affects the Focus stat."
+    },
+    {
+        "label" : "endurance",
+        "flavortext" : "Attribute governing Stamina. Also affects Robustness. This attribute also determines how heavy your equipment can be. Soft-capped for stamina at 50 and maximum equip load at 60: returns diminish greatly after those points."
+    },
+    {
+        "label" : "strength",
+        "flavortext" : "Attribute required to wield heavy armaments. Also boosts attacks power of strength-scaling armaments and affects your Physical Defense."
+    },
+    {
+        "label" : "dexterity",
+        "flavortext" : "Attribute required to wield advanced armaments. Also boosts attack power of dexterity-scaling armaments, reduces casting time of Spells, softens fall damage, and makes it harder to be knocked off your horse."
+    },
+    {
+        "label" : "intelligence",
+        "flavortext" : "Attribute required to perform glintstone sorceries. Also boosts magic power of intelligence-scaling Sorceries and improves Magic Resistance."
+    },
+    {
+        "label" : "faith",
+        "flavortext" : "Attribute required to perform sacred Incantations. Also boosts magic power of faith-scaling Incantations."
+    },
+    {
+        "label" : "arcane",
+        "flavortext" : "Attribute governing Discovery. Also affects Holy Defense, Vitality, and certain Sorceries and Incantations."
+    }
+];
 
 
 const baseStatNames = ['HP', 'FP', 'Stamina', 'Equip Load', 'Poise', 'Discovery'];
@@ -882,109 +885,25 @@ const defenseNames = ['Physical', 'VS Strike', 'VS Slash', 'VS Pierce', 'Magic',
 const resistanceNames = ['Immunity', 'Robustness', 'Focus', 'Vitality'];
 
 
-let globalStats = {
-    // stats are NOT INFLUENCED by equip (e.g. armor, talismans, ...)
-    'hp' : -1,
-    'fp' : -1,
-    'stamina' : -1,
-    'maxEquipLoad' : -1,
-    'equipLoad' : -1,
-    'poise' : -1,
-    // TODO BAD NAME, SHOULD BE SOMETHING LIKE 'stat one'
-    'defense' : {
-        'initial' : {
-            "physical" : -1,
-            "vs-strike" : -1,
-            "vs-slash" : -1,
-            "vs-pierce" : -1,
-            "magic" : -1,
-            "fire" : -1,
-            "lightning" : -1,
-            "holy" : -1,
-            "immunity" : -1,
-            "robustness" : -1,
-            "focus" : -1,
-            "vitality" : -1
-        },
-        'armor' : {
-            "physical" : -1,
-            "vs-strike" : -1,
-            "vs-slash" : -1,
-            "vs-pierce" : -1,
-            "magic" : -1,
-            "fire" : -1,
-            "lightning" : -1,
-            "holy" : -1,
-            "immunity" : -1,
-            "robustness" : -1,
-            "focus" : -1,
-            "vitality" : -1
-        }
-    },
-    // TODO BAD NAME, SHOULD BE SOMETHING LIKE 'stat two'
-    'resistance' : {
-        'initial' : {
-            "physical" : -1,
-            "vs-strike" : -1,
-            "vs-slash" : -1,
-            "vs-pierce" : -1,
-            "magic" : -1,
-            "fire" : -1,
-            "lightning" : -1,
-            "holy" : -1,
-            "immunity" : -1,
-            "robustness" : -1,
-            "focus" : -1,
-            "vitality" : -1
-        },
-        'armor' : {
-            "physical": -1,
-            "vs-strike": -1,
-            "vs-slash": -1,
-            "vs-pierce": -1,
-            "magic": -1,
-            "fire": -1,
-            "holy": -1,
-            "immunity" : -1,
-            "robustness" : -1,
-            "focus" : -1,
-            "vitality" : -1
-        }
-    }
-
-            /*"immunity" : "0",
-            "robustness" : "0",
-            "focus" : "0",
-            "vitality" : "0",
-            "poise" : "0",
-            "weight" : "0",*/
-}
-
-let globalArmor = {
-    'head' : headsJSON.heads[0],
-    'chest' : chestsJSON.chests[0],
-    'hands' : handsJSON.hands[0],
-    'legs' : legsJSON.legs[0]
-}
-
-
 window.onload = (() => main())
 
 function main() {
+    // add missing html
     createClassSelect();
-
-
-    // detaillierter kommentieren
-    // create levelable stat region
-    const levelableStatsRegion = document.getElementsByClassName("levelable-stats-region")[0];
-    statsJSON.stats.forEach(stat => { levelableStatsRegion.appendChild(createStatNode(stat)); })
+    createAttributeRegion();
 
 
     // add armor selects
-    addArmorSelect('head-dropdown-region', headsJSON.heads, "updateGlobalArmorPiece('head', headsJSON.heads);");
-    addArmorSelect('chest-dropdown-region', chestsJSON.chests, "updateGlobalArmorPiece('chest', chestsJSON.chests);");
-    addArmorSelect('hands-dropdown-region', handsJSON.hands, "updateGlobalArmorPiece('hands', handsJSON.hands);");
-    addArmorSelect('legs-dropdown-region', legsJSON.legs, "updateGlobalArmorPiece('legs', legsJSON.legs);");
+    addArmorSelect('head-dropdown-region', headsJSON.heads, "updateArmorPieceState('head', headsJSON.heads);");
+    addArmorSelect('chest-dropdown-region', chestsJSON.chests, "updateArmorPieceState('chest', chestsJSON.chests);");
+    addArmorSelect('hands-dropdown-region', handsJSON.hands, "updateArmorPieceState('hands', handsJSON.hands);");
+    addArmorSelect('legs-dropdown-region', legsJSON.legs, "updateArmorPieceState('legs', legsJSON.legs);");
+
+
+    // add talisman selects
+    for(let i = 1; i <= 4; i++) {
+        addTalismanSelect(i);
+    }
 
 
     // add base stat nodes
@@ -1004,24 +923,53 @@ function main() {
 
     // initiate some stats, once preceding equipment and stats have been set
     // initiate class stats
-    updateClassStats(classesJSON, statsJSON);
+    onchangeClassSelect(classesJSON, attributesJSON);
 
 
     // update resulting level
-    updateLevel()
+    updateStateLevel();
+    updateUILevel();
 
 
     updateArmorStats();
+
+
+    // give select elements a search function
+    $('select').selectize({
+        sortField: 'text'
+    });
+
+
+    // initiate class' state
+    updateStateClass();
+
+
+    // div[classSelectRegion] div div div[item]
+    // add removed eventListener to class
+    // const classSelectItem = document.querySelector('div.class-selection-region div div input');
+    // classSelectItem.addEventListener('click', onchangeClassSelect);
+
+    // TODO delete me
+    // updateActiveEffects();
 }
 
 
 // ----- specific helper functions -----
+function getTalismanState(index) {
+    const talisman = states.talismans["talisman" + index];
+    if(talisman === undefined) {
+        return talismansJSON[0];
+    }
+    return talisman;
+}
+
 function createClassSelect() {
     const classSelectionRegion = document.getElementsByClassName("class-selection-region")[0];
 
     const selectNode = document.createElement("select");
     selectNode.classList.add("dropdown-select");
-    selectNode.setAttribute('onchange', 'updateClassStats()');
+    // selectNode.addEventListener('change', onchangeClassSelect);
+    selectNode.setAttribute('onchange', 'onchangeClassSelect()');
 
     classesJSON.classes.forEach(characterClass => {
         const optionNode = document.createElement("option");
@@ -1035,35 +983,120 @@ function createClassSelect() {
     classSelectionRegion.appendChild(selectNode);
 }
 
-function createStatNode(stat) {
-    // create label div
+function updateStateClass() {
+    const classSelect = document.getElementsByClassName('class-selection-region')[0].firstChild;
+    const className = classSelect.options[classSelect.selectedIndex].text.toLowerCase();
+
+    // get the class' attribute points
+    let classObject;
+    classesJSON.classes.forEach(curClassObject => {
+        if(curClassObject.name === className) {
+            classObject = curClassObject;
+        }
+    })
+
+    if(classObject !== undefined) {
+        states.class = classObject;
+    }
+}
+
+function onchangeClassSelect() {
+    const previousClassObject = states.class;
+    updateStateClass();
+    const newClassObject = states.class;
+
+    // prevent onchange if no change actually happened (selectized select can trigger onchange, when deleting current input to type in)
+    if(previousClassObject === newClassObject) {return;}
+
+
+    updateStateAttributePointsClass();
+    updateUIAttributePoints();
+
+
+    updateStateLevelClass();
+    updateUILevelClass();
+
+
+    updateStateLevel();
+    updateUILevel();
+
+
+    updateStateBaseStats();
+    updateUIBaseStats();
+}
+
+
+function updateStateAttributePointsClass() {
+    attributesJSON.forEach(curAttribute => {
+        const curLabel = curAttribute.label;
+
+        states.attributePoints.class[curLabel] = states.class[curLabel];
+        // TODO check, if value has been edited AND is >= class value
+        states.attributePoints.editable[curLabel] = states.class[curLabel];
+        states.attributePoints.final[curLabel] = states.class[curLabel];
+    })
+}
+
+function updateUIAttributePoints() {
+    updateUIAttributePointsColumn('class');
+    updateUIAttributePointsColumn('editable');
+    updateUIAttributePointsColumn('final');
+}
+function updateUIAttributePointsColumn(columnName) {
+    attributesJSON.forEach(curAttribute => {
+        const curAttributeName = curAttribute.label;
+
+        const attributeInput = document.getElementById(curAttributeName + '-' + columnName);
+        attributeInput.value = states.attributePoints[columnName][curAttributeName];
+    })
+}
+
+
+function createAttributeRegion() {
+    const attributeRegion = document.getElementsByClassName("attribute-region")[0];
+    attributesJSON.forEach(stat => { attributeRegion.appendChild(createAttributePointNode(stat)); })
+}
+
+function createAttributePointNode(attribute) {
+    // create ap div
     const div = document.createElement("div");
-    div.classList.add('clearfix');
     div.classList.add('stat-box');
 
+
+    // create/add label to div
     const label = document.createElement("label");
-    label.setAttribute('for', stat.label);
-    label.setAttribute('title', stat.flavortext);
-    label.innerText = capitalizeFirstLetter(stat.label);
+    label.setAttribute('for', attribute.label);
+    label.setAttribute('title', attribute.flavortext);
+    label.innerText = capitalizeFirstLetter(attribute.label);
 
     div.appendChild(label);
 
 
-    // create stat input
+    // create/add final input
+    const input3 = document.createElement('input');
+    input3.setAttribute('id', attribute.label + '-final');
+    input3.classList.add('fixed');
+    input3.setAttribute('type', 'text');
+    input3.setAttribute('readonly', '');
+
+    div.appendChild(input3);
+
+
+    // create/add editable input
     const input2 = document.createElement('input');
-    input2.setAttribute('id', stat.label);
+    input2.setAttribute('id', attribute.label + '-editable');
     input2.classList.add('editable');
     input2.setAttribute('type', 'text');
     input2.setAttribute('maxlength', '2');
     input2.setAttribute('tabindex', '1');
-    input2.setAttribute('onchange', "checkClassStat('" + stat.label + "')");
+    input2.setAttribute('onchange', "onchangeAttributeInput('" + attribute.label + "')");
 
     div.appendChild(input2);
 
 
-    // create stat-fixed input
+    // create/add class input
     const input = document.createElement('input');
-    input.setAttribute('id', stat.label + '-fixed');
+    input.setAttribute('id', attribute.label + '-class');
     input.classList.add('fixed');
     input.setAttribute('type', 'text');
     input.setAttribute('readonly', '');
@@ -1074,83 +1107,84 @@ function createStatNode(stat) {
     return div;
 }
 
-function updateClassStats() {
-    // get selected class
-    const classSelect = document.getElementsByClassName('class-selection-region')[0].firstChild;
-    const className = classSelect.options[classSelect.selectedIndex].text.toLowerCase();
 
-    // get the class' stats
-    let classStats;
-    classesJSON.classes.forEach(classStatInstance => {
-        if(classStatInstance.name === className) {
-            classStats = classStatInstance;
-        }
-    })
 
-    // fill them in the fitting spots
-    statsJSON.stats.forEach(stat => {
-        const curLabel = stat.label;
-        let curInput = document.getElementById(curLabel + '-fixed');
-        curInput.value = classStats[curLabel];
-
-        curInput = document.getElementById(curLabel);
-        // TODO check, if value has been edited AND is >= class value
-        curInput.value = classStats[curLabel];
-    })
-    const levelInput = document.getElementById('level-fixed');
-    levelInput.value = classStats.level;
-
-    // update level
-    updateLevel()
-
-    // update stats
-    updateStats();
-}
-
-function checkClassStat(statLabel) {
+function onchangeAttributeInput(statLabel) {
     // get value of current user made attribute
-    const stat = document.getElementById(statLabel);
+    const stat = document.getElementById(statLabel + '-editable');
 
     // get value of current attribute of class
-    const classStatValue = document.getElementById(statLabel + '-fixed').value;
+    const classStatValue = document.getElementById(statLabel + '-class').value;
 
     // correct to min value if needed
     if(!isNumeric(stat.value) || parseInt(stat.value) < classStatValue) {
         stat.value = classStatValue;
     }
 
-    updateLevel();
-    updateStats();
+    updateStateLevel();
+    updateUILevel();
+
+    updateStateBaseStats();
+    updateUIBaseStats();
 }
 
-function updateLevel() {
+
+function updateStateLevelClass() {
+    states.attributePoints.class.level = states.class.level;
+}
+
+function updateStateLevel() {
+    // calculate level
     let totalStats = 0;
-    statsJSON.stats.forEach(stat => {
-        const curLabel = stat.label;
-        const curInput = document.getElementById(curLabel);
+    attributesJSON.forEach(curAttribute => {
+        const curAttributeName = curAttribute.label;
+        const curAttributeInput = document.getElementById(curAttributeName + '-editable');
 
-        totalStats += parseInt(curInput.value);
+        totalStats += parseInt(curAttributeInput.value);
     })
+    const level = totalStats - 79;
 
-    const levelInput = document.getElementById('level');
-    levelInput.value = totalStats - 79;
+    states.attributePoints.editable.level = level;
+    states.attributePoints.final.level = level;
 }
 
-function updateStats() {
-    const vigorIndex = document.getElementById('vigor').value;
-    globalStats.hp = vigor[vigorIndex];
+function updateUILevelClass() {
+    const classLevelInput = document.getElementById('level-class');
+    classLevelInput.value = states.attributePoints.class.level;
+}
 
-    const mindIndex = document.getElementById('mind').value;
-    globalStats.fp = mind[mindIndex];
+function updateUILevel() {
+    const editableLevelInput = document.getElementById('level-editable');
+    editableLevelInput.value = states.attributePoints.editable.level;
 
-    const enduranceIndex = document.getElementById('endurance').value;
-    globalStats.stamina = endurance[enduranceIndex].stamina;
-    globalStats.maxEquipLoad = endurance[enduranceIndex].maxEquipLoad;
+    const finalLevelInput = document.getElementById('level-final');
+    finalLevelInput.value = states.attributePoints.final.level;
+}
 
+function updateStateBaseStats() {
+    // updateStateHP();
+    const vigorIndex = document.getElementById('vigor-editable').value;
+    states.baseStats.hp = vigor[vigorIndex];
+
+    // updateStateFP();
+    const mindIndex = document.getElementById('mind-editable').value;
+    states.baseStats.fp = mind[mindIndex];
+
+    // updateStateStamina(); + updateStateMaxEquipLoad();
+    const enduranceIndex = document.getElementById('endurance-editable').value;
+    states.baseStats.stamina = endurance[enduranceIndex].stamina;
+    states.baseStats.maxEquipLoad = endurance[enduranceIndex].maxEquipLoad;
+
+    // updateStateDiscovery();
+    states.baseStats.discovery = 100 + states.attributePoints.final.arcane;
+}
+
+function updateUIBaseStats() {
     updateUIHP();
     updateUIFP();
     updateUIStamina();
     updateUIEquipLoad();
+    // updateUIDiscovery();
 }
 
 function addArmorSelect(armorClass, armorArray, onchangePart) {
@@ -1172,27 +1206,29 @@ function addArmorSelect(armorClass, armorArray, onchangePart) {
     armorDropdownRegion.appendChild(selectNode);
 }
 
-function updateGlobalArmorPiece(armorName, armorClass) {
+function updateArmorPieceState(armorName, armorClass) {
     const select = document.getElementsByClassName(armorName + '-dropdown-region')[0].firstChild;
     const name = select.options[select.selectedIndex].text;
-    globalArmor[armorName] = armorClass.filter(armorPiece => armorPiece.name === name)[0];
+    states.armor[armorName] = armorClass.filter(armorPiece => armorPiece.name === name)[0];
 }
 
 function updateArmorStats() {
     // update all armor related stats
     // TODO 'Equip Load', 'Poise', resistanceNames
-    updateGlobalEquipLoad();
+    updateEquipLoadState();
+    updateStatePoise();
     defenseNames.forEach(defenseName => {
         const defenseInputName = defenseName.toLowerCase().replace(/\s/g, '-');
-        updateGlobalDefenseArmor(defenseInputName);
+        updateDmgNegationState(defenseInputName);
     })
     resistanceNames.forEach(resistanceName => {
         const resistanceInputName = resistanceName.toLowerCase();
-        updateGlobalResistanceArmor(resistanceInputName);
+        updateArmorState(resistanceInputName);
     })
 
     // update UI
     updateUIEquipLoad();
+    updateUIPoise();
     defenseNames.forEach(defenseName => {
         const defenseInputName = defenseName.toLowerCase();
         updateUIArmorDefense(defenseInputName);
@@ -1203,10 +1239,62 @@ function updateArmorStats() {
     })
 }
 
+function addTalismanSelect(index) {
+    const selectNode = document.getElementsByClassName('talisman' + index + '-region')[0].children[0];
+    selectNode.setAttribute('onchange', "updateTalismans(" + index + ");");
+
+    // add options to talisman select
+    talismansJSON.forEach(talisman => {
+        const optionNode = document.createElement("option");
+        optionNode.setAttribute('value', talisman.name);
+        optionNode.innerText = talisman.name;
+
+        selectNode.appendChild(optionNode);
+    })
+}
+
+function updateTalismans(index) {
+    console.log('Updating Talismans...');
+    updateTalismanState(index);
+    updateActiveEffects();
+    updateTalismanStats();
+}
+
+function updateTalismanState(index) {
+    const select = document.getElementsByClassName('talisman' + index + '-region')[0].children[0];
+    const name = select.options[select.selectedIndex].text;
+    states.talismans['talisman' + index] = talismansJSON.filter(talisman => talisman.name === name)[0];
+}
+
+function updateActiveEffects() {
+    const activeEffectsList = document.getElementsByClassName('active-effects-region')[0].children[1];
+    console.log(activeEffectsList);
+
+    console.log('Updating Talisman Effects...');
+    while(activeEffectsList.children[0] !== undefined) {
+        activeEffectsList.children[0].remove();
+    }
+
+    for(let i = 1; i <= 4; i++) {
+        const curTalisman = getTalismanState(i);
+        if(curTalisman.effect !== '') {
+            const listItem = document.createElement('li');
+            listItem.innerText = curTalisman.effect + ' (' + curTalisman.name + ')';
+
+            activeEffectsList.appendChild(listItem);
+        }
+    }
+}
+
+function updateTalismanStats() {
+    // TODO update talisman stats
+
+    console.log('Updating Talisman Stats...');
+}
+
 // all 3 are very similar, last 2 almost equal
 function createBaseStatNode(name) {
     const div = document.createElement('div');
-    div.classList.add('clearfix');
     div.classList.add('stat-box');
 
     const label = document.createElement('label');
@@ -1227,7 +1315,6 @@ function createBaseStatNode(name) {
 
 function createDefenseNode(name) {
     const div = document.createElement('div');
-    div.classList.add('clearfix');
     div.classList.add('stat-box');
 
     const label = document.createElement('label');
@@ -1254,7 +1341,6 @@ function createDefenseNode(name) {
 
 function createResistanceNode(name) {
     const div = document.createElement('div');
-    div.classList.add('clearfix');
     div.classList.add('stat-box');
 
     const label = document.createElement('label');
@@ -1279,64 +1365,80 @@ function createResistanceNode(name) {
     return div;
 }
 
-function updateGlobalEquipLoad() {
-    globalStats.equipLoad = round((
-        parseFloat(globalArmor.head.weight)
-        + parseFloat(globalArmor.chest.weight)
-        + parseFloat(globalArmor.hands.weight)
-        + parseFloat(globalArmor.legs.weight)
+function updateEquipLoadState() {
+    states.baseStats.equipLoad = round((
+        parseFloat(states.armor.head.weight)
+        + parseFloat(states.armor.chest.weight)
+        + parseFloat(states.armor.hands.weight)
+        + parseFloat(states.armor.legs.weight)
     ), 1);
 }
 
-function updateGlobalDefenseArmor(type) {
-    globalStats.resistance.armor[type] = round((
-        (1 - parseFloat(globalArmor.head[type])/100)
-        * (1 - parseFloat(globalArmor.chest[type])/100)
-        * (1 - parseFloat(globalArmor.hands[type])/100)
-        * (1 - parseFloat(globalArmor.legs[type])/100)
+function updateStatePoise() {
+    states.baseStats.poise = (
+        parseInt(replaceMinusOrEmptyWithZero(states.armor.head.poise))
+        + parseInt(replaceMinusOrEmptyWithZero(states.armor.chest.poise))
+        + parseInt(replaceMinusOrEmptyWithZero(states.armor.hands.poise))
+        + parseInt(replaceMinusOrEmptyWithZero(states.armor.legs.poise))
+    );
+}
+
+function updateDmgNegationState(type) {
+    states.resistance.armor[type] = round((
+        (1 - parseFloat(states.armor.head[type])/100)
+        * (1 - parseFloat(states.armor.chest[type])/100)
+        * (1 - parseFloat(states.armor.hands[type])/100)
+        * (1 - parseFloat(states.armor.legs[type])/100)
     ), 5);
 }
 
-function updateGlobalResistanceArmor(type) {
-    globalStats.resistance.armor[type] = round((
-        parseFloat(globalArmor.head[type])
-        + parseFloat(globalArmor.chest[type])
-        + parseFloat(globalArmor.hands[type])
-        + parseFloat(globalArmor.legs[type])
+function updateArmorState(type) {
+    states.resistance.armor[type] = round((
+        parseFloat(replaceMinusOrEmptyWithZero(states.armor.head[type]))
+        + parseFloat(replaceMinusOrEmptyWithZero(states.armor.chest[type]))
+        + parseFloat(replaceMinusOrEmptyWithZero(states.armor.hands[type]))
+        + parseFloat(replaceMinusOrEmptyWithZero(states.armor.legs[type]))
     ), 0)
 }
 
+
+// ----- update UI functions -----
 function updateUIHP() {
     const hpInput = document.getElementById('hp');
-    hpInput.value = globalStats.hp;
+    hpInput.value = states.baseStats.hp;
 }
 
 function updateUIFP() {
     const fpInput = document.getElementById('fp');
-    fpInput.value = globalStats.fp;
+    fpInput.value = states.baseStats.fp;
 }
 
 function updateUIStamina() {
     const staminaInput = document.getElementById('stamina');
-    staminaInput.value = globalStats.stamina;
+    staminaInput.value = states.baseStats.stamina;
 }
 
 function updateUIEquipLoad() {
     const equipLoadInput = document.getElementById('equip load');
     equipLoadInput.value =
-        Math.round(globalStats.equipLoad*10)/10 + ' / ' + Math.round(globalStats.maxEquipLoad*10)/10 +
-        ' (' + Math.round((globalStats.equipLoad/globalStats.maxEquipLoad*100)*10)/10 + '%)';
+        Math.round(states.baseStats.equipLoad*10)/10 + ' / ' + Math.round(states.baseStats.maxEquipLoad*10)/10 +
+        ' (' + Math.round((states.baseStats.equipLoad/states.baseStats.maxEquipLoad*100)*10)/10 + '%)';
+}
+
+function updateUIPoise() {
+    const staminaInput = document.getElementById('poise');
+    staminaInput.value = states.baseStats.poise;
 }
 
 function updateUIArmorDefense(type) {
     const defenseInput = document.getElementById(type + '-absorption');
-    defenseInput.value = round((1 - globalStats.resistance.armor[type.replace(/\s/g, '-')])*100, 3);
+    defenseInput.value = round((1 - states.resistance.armor[type.replace(/\s/g, '-')])*100, 3);
     defenseInput.value += '%';
 }
 
 function updateUIArmorResistance(type) {
     const resistanceInput = document.getElementById(type + '-armor');
-    resistanceInput.value = round(globalStats.resistance.armor[type], 0);
+    resistanceInput.value = round(states.resistance.armor[type], 0);
 }
 
 
@@ -1353,4 +1455,12 @@ function isNumeric(str) {
 
 function round(num, decimal) {
     return Math.round((num)*Math.pow(10, decimal))/Math.pow(10, decimal);
+}
+
+function replaceMinusOrEmptyWithZero(resistance) {
+    if(resistance === '-' || resistance === '') {
+        return '0';
+    } else {
+        return resistance;
+    }
 }
