@@ -1,6 +1,11 @@
 "use strict"
 
 
+import {DIRECTION, DEG_TO_RAD} from './minecraft/globals.js';
+import {geometries} from './minecraft/geometries.js';
+import {materials} from './minecraft/materials.js';
+
+
 /*
 * TODO
 *  -textures for missing Redstone Components
@@ -19,14 +24,6 @@
 
 // ---------- define global constants ----------
 // enums
-const DIRECTION = {
-    TOP : 0,
-    LEFT : 1,
-    RIGHT : 2,
-    FRONT : 3,
-    BACK : 4,
-    BOTTOM : 5
-}
 const REDSTONE_DIRECTION = {
     TOP : 0,
     LEFT_TOP : 1,
@@ -48,8 +45,8 @@ const ANIMATE_TASK_TYPE = {
     ADD_TO_SCENE : 1,
     REMOVE_FROM_SCENE : 2
 }
+
 // math
-const DEG_TO_RAD = Math.PI/180;
 const DEFAULT_FRAME_RATE = 60;
 const GAME_TICKS_PER_SECOND = 20;
 const REDSTONE_TICKS_PER_SECOND = 10;
@@ -211,13 +208,36 @@ class RedstoneDust {
 }
 
 class Piston {
-    constructor(meshes = [], facing = DIRECTION.TOP, powered = false, extended = false, pushable = true, immovable = false) {
+    constructor(meshes = [], facing = DIRECTION.TOP, powered = false, extended = false, immovable = false) {
         this.meshes = meshes;
         this.facing = facing;
         this.powered = powered;
         this.extended = extended;
-        this.pushable = pushable;
+        this.pushable = true;
         this.immovable = immovable;
+    }
+
+    update() {
+        if(this.powered && !this.extended) {
+            // attempt to extend
+        }
+
+        if(!this.powered && this.extended) {
+            // retract
+        }
+
+        // update surrounding blocks
+        // !WARNING! don't update the Block you got updated by OR updating Blocks can't be updated OR who knows
+    }
+}
+
+class Repeater {
+    constructor(meshes = [], facing = DIRECTION.FRONT, powered = false) {
+        this.meshes = meshes;
+        this.facing = facing;
+        this.powered = powered;
+        this.pushable = false;
+        this.immovable = false;
     }
 }
 
@@ -264,7 +284,9 @@ class RemoveFromSceneTask {
 
 
 // do main
-window.onload = (() => {
+window.onload = (() => main())
+
+function main() {
     // ---------- initiate some thee.js scene basics ----------
     // get canvas from html
     const canvas = document.querySelector('#minecraft-surface');
@@ -288,83 +310,38 @@ window.onload = (() => {
 
 
     // ---------- load textures ----------
-    // create texture loader
-    const loader = new THREE.TextureLoader();
-    // create constant base path to assets
-    const BLOCK_ASSET_PART_URL = 'assets/minecraft/1.18.1/minecraft/textures/block/';
-    // load basic block textures
-    const smoothStoneTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'smooth_stone.png');
-    // load block face textures
-    const pistonTopTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_top.png');
-    const pistonTopStickyTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_top_sticky.png');
-    const pistonSideTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_side.png');
-    const pistonInnerTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_inner.png');
-    const pistonBottomTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'piston_bottom.png');
-    // load plane textures
-    const redstoneDustDotTexture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'redstone_dust_dot.png');
-    const redstoneDustLine0Texture = loadTextureWithNearestFilter(loader, BLOCK_ASSET_PART_URL + 'redstone_dust_line0.png');
+    // Already done in minecraft/textures.js.
 
 
     // ---------- create materials ----------
-    // create basic materials
-    const smoothStoneMaterial = new THREE.MeshStandardMaterial( {map : smoothStoneTexture} );
-    // create multi faced materials
-    const pistonMaterials = create6FacedMaterial(pistonTopTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonBottomTexture);
-    const pistonBaseMaterials = create6FacedMaterial(pistonInnerTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonBottomTexture);
-    const pistonHeadMaterials = create6FacedMaterial(pistonTopTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonSideTexture, pistonTopTexture);
-    // create multi colored material arrays
-    const redstoneDustLine0MaterialArray = [];
-    for(let i = 0; i < 16; i++) {
-        redstoneDustLine0MaterialArray.push( new THREE.MeshStandardMaterial( {map : redstoneDustLine0Texture, transparent : true, color : getRedstoneColor(i)} ) )
-    }
+    // Already done in minecraft/materials.js.
 
 
     // ---------- create geometry ----------
-    const boxGeometry = new THREE.BoxGeometry();
-
-    const shaftGeometry = new THREE.BoxGeometry(0.25, 1, 0.25);
-    // change uv mapping of shaft, so that the sides use the top 25% of the given texture rotated counterclockwise
-    uvMap(shaftGeometry, 0.25, true, false, true);
-
-    // reminder to shift in one direction by 1/8, as it is not a full block
-    // generic name: box3_4BottomGeometry
-    const pistonBaseGeometry = new THREE.BoxGeometry(1, 0.75, 1);
-    // change uv mapping of pistonBase, so that the sides use the bottom 75% of the given texture
-    uvMap(pistonBaseGeometry, 0.75);
-
-    // reminder to shift in one direction by 3/8, as it is not a full block
-    // generic name: box1_4TopGeometry
-    const pistonHeadGeometry = new THREE.BoxGeometry(1, 0.25, 1);
-    // change uv mapping of pistonHead, so that the sides use the top 25% of the given texture
-    uvMap(pistonHeadGeometry, 0.25, true);
-
-    // only visible from atop
-    const topPlaneGeometry = new THREE.PlaneGeometry();
-    topPlaneGeometry.rotateX(-90 * DEG_TO_RAD);
+    // Already done in minecraft/geometries.js.
 
 
-    // initiate some array
+    // ---------- initiate great array ----------
     const blocks = new Array3dPlus();
     const animations = [];
 
 
     // ---------- define functions requiring specific textures, materials, geometry and/or blocks ----------
-    function addSmoothStoneBlock(x, y, z) {
-        blocks.set(
-            x, y, z,
-            new Block('smooth_stone', [addMeshToScene(scene, boxGeometry, smoothStoneMaterial, x, y, z)])
-        );
-    }
+    // TODO ALLES auslagern
+
 
     // should NOT be able to enter maxPower without powered[]
     function addRedstoneDust(x, y, z, maxPower) {
         blocks.set(
             x, Math.round(y), z,
-            new RedstoneDust([addMeshToScene(scene, topPlaneGeometry, redstoneDustLine0MaterialArray[maxPower], x, y, z)])
+            new RedstoneDust([addMeshToScene(scene, geometries.topPlane, materials.redstoneDustLine0Array[maxPower], x, y, z)])
         );
     }
 
     function addPiston(x, y, z, facing = DIRECTION.TOP) {
+        // as blocks are being created, they are being created in the center of the grid
+        // BUT, as e.g. a piston isn't made up of simply a whole block, but multiple parts
+        // they have to be pushed to their respective positions
         const PISTON_HEAD_OFFSET = 3/8;
         const PISTON_SHAFT_OFFSET = -1/4;
         const PISTON_BASE_OFFSET = -1/8;
@@ -390,16 +367,16 @@ window.onload = (() => {
         blocks.set(
             x, y, z,
             new Piston([
-                addMeshToScene(scene, boxGeometry, pistonMaterials, x, y, z, facing),
-                createMesh(pistonBaseGeometry, pistonBaseMaterials,
+                addMeshToScene(scene, geometries.box, materials.piston, x, y, z, facing),
+                createMesh(geometries.pistonBase, materials.pistonBase,
                     x + xOffset(PISTON_BASE_OFFSET),
                     y + yOffset(PISTON_BASE_OFFSET),
                     z + zOffset(PISTON_BASE_OFFSET), facing),
-                createMesh(shaftGeometry, pistonMaterials,
+                createMesh(geometries.shaft, materials.piston,
                     x + xOffset(PISTON_SHAFT_OFFSET),
                     y + yOffset(PISTON_SHAFT_OFFSET),
                     z + zOffset(PISTON_SHAFT_OFFSET), facing),
-                createMesh(pistonHeadGeometry, pistonHeadMaterials,
+                createMesh(geometries.pistonHead, materials.pistonHead,
                     x + xOffset(PISTON_HEAD_OFFSET),
                     y + yOffset(PISTON_HEAD_OFFSET),
                     z + zOffset(PISTON_HEAD_OFFSET), facing)
@@ -407,31 +384,65 @@ window.onload = (() => {
         );
     }
 
+    function addRepeater(x, y, z, facing = DIRECTION.FRONT) {
+        let [dirX, dirY, dirZ] = directionToArrayXYZ(facing);
+
+        // add diodeBase to scene
+        const diodeBase = addMeshToScene(scene, geometries.diodeBase, materials.repeater, x, y - 7/16, z, facing);
+
+        // correct rotation to be flat/horizontal on blocks
+        switch(facing) {
+            case DIRECTION.LEFT: diodeBase.rotateZ(-90 * DEG_TO_RAD); diodeBase.rotateY(90 * DEG_TO_RAD); break;
+            case DIRECTION.RIGHT: diodeBase.rotateZ(90 * DEG_TO_RAD); diodeBase.rotateY(270 * DEG_TO_RAD); break;
+            case DIRECTION.FRONT: diodeBase.rotateX(-90 * DEG_TO_RAD); diodeBase.rotateY(180 * DEG_TO_RAD); break;
+            case DIRECTION.BACK: diodeBase.rotateX(90 * DEG_TO_RAD); break;
+        }
+
+        // add both halfTorches to scene
+        const movableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 1/16), y - 3/16 - 1/32, z + (dirZ * 1/16), DIRECTION.TOP);
+        const immovableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 5/16), y - 3/16 - 1/32, z + (dirZ * 5/16), DIRECTION.TOP);
+
+        // add repeater to blocks array
+        blocks.set(x, y, z, new Repeater([diodeBase, immovableTorch, movableTorch], facing))
+    }
+
 
     // add 5x5 piston floor to scene
     for(let x = -2; x < 3; x++) {
         for(let z = -2; z < 3; z++) {
-            //addSmoothStoneBlock(x, 0, z);
+            //addSmoothStoneBlock(blocks, scene, x, 0, z);
             addPiston(x, 0, z, DIRECTION.TOP);
         }
     }
 
+    addPiston(-1, 1, 2, DIRECTION.BOTTOM);
+
+
+    // add some torches
+    /*addMeshToScene(scene, geometries.torch, materials.redstoneTorch, x, y, z, DIRECTION.TOP);
+    addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorch, x, y, z, DIRECTION.TOP);
+    addMeshToScene(scene, geometries.torchHead, materials.redstoneTorch, x, y, z, DIRECTION.TOP);
+
+    addMeshToScene(scene, geometries.torch, materials.redstoneTorchOff, x, y, z, DIRECTION.TOP);
+    addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x, y, z, DIRECTION.TOP);
+    addMeshToScene(scene, geometries.torchHead, materials.redstoneTorchOff, x, y, z, DIRECTION.TOP);*/
+
+
+    // add some diodes
+    addRepeater(0, 1, 0, DIRECTION.BACK);
+
 
     // add lighting to scene
-    const pointLight = new THREE.PointLight(0x000000);
-    pointLight.position.set(2, 2.5, 1.8);
-
-    // somewhat minecraft light : 0xccc8cf
-    const ambientLight = new THREE.AmbientLight(0xffffff);
-
-    scene.add(pointLight, ambientLight);
+    addLight(scene);
 
 
     // add helper
+    /*
     //const lightHelper = new THREE.PointLightHelper(pointLight);
     //const gridHelper = new THREE.GridHelper(200, 50);
 
     //scene.add(lightHelper, gridHelper);
+    */
 
 
     // orbit controls
@@ -439,14 +450,7 @@ window.onload = (() => {
 
 
     // add block at given position on click
-    const addSmoothStoneBlockBtn = document.querySelector('#add-smooth-stone-block');
-    const addSmoothStoneBlockEventListener = () => {
-        const x = parseInt(document.querySelector('#x').value);
-        const y = parseInt(document.querySelector('#y').value);
-        const z = parseInt(document.querySelector('#z').value);
-        addSmoothStoneBlock(x, y, z);
-    }
-    addSmoothStoneBlockBtn.addEventListener('click', addSmoothStoneBlockEventListener)
+    addAddSmoothStoneBlockBtn(blocks, scene);
 
 
     // add stuff on click
@@ -455,10 +459,10 @@ window.onload = (() => {
         // add 5 smooth stone blocks before and after floor
         let block = {'name' : 'smooth_stone', 'mesh' : undefined};
         for(let z = -7; z < -2; z++) {
-            addSmoothStoneBlock(0, 0, z);
+            addSmoothStoneBlock(blocks, scene, 0, 0, z);
         }
         for(let z = 3; z < 8; z++) {
-            addSmoothStoneBlock(0, 0, z);
+            addSmoothStoneBlock(blocks, scene, 0, 0, z);
         }
 
         // add redstone line powered 1 to 15
@@ -490,11 +494,14 @@ window.onload = (() => {
     const actPistonBtn = document.querySelector('#extend-retract-piston');
     const actPistonEventListener = () => {
         // get piston @002
-        let x, y, z;
-        [x, y, z] = [0, 0, 2];
+        /*let x, y, z;
+        [x, y, z] = [0, 0, 2];*/
+        const x = parseInt(document.querySelector('#x').value);
+        const y = parseInt(document.querySelector('#y').value);
+        const z = parseInt(document.querySelector('#z').value);
         const piston = blocks.get(x, y, z);
 
-        // get directional x y z
+        // get directional x y z (basically two 0s and one 1 or -1)
         let dirX, dirY, dirZ;
         [dirX, dirY, dirZ] = directionToArrayXYZ(piston.facing);
 
@@ -613,86 +620,40 @@ window.onload = (() => {
     }
 
     animate();
-})
-
-// !WARNING! doRotate90DegreesCounterClockwise = true (currently) REQUIRES doCheckSidesOnly = false
-function uvMap(geometry, percentOfTexture, doTopPartOfTexture = false, doCheckSidesOnly = true, doRotate90DegreesCounterClockwise = false) {
-    let uv = geometry.getAttribute('uv');
-
-    // only take top 25% (4px) of piston_side.png
-    let checkSidesOnly = (index) => {
-        if(doCheckSidesOnly) return index < 16 || index >= 32;
-        return true;
-    }
-    let a = 1;
-    let b = 1;
-    if(doRotate90DegreesCounterClockwise) {
-        b = 0;
-    }
-    if(doTopPartOfTexture) {
-        a = 0;
-        percentOfTexture = 1 - percentOfTexture;
-    }
-    uv.array.forEach((value, index) => {
-        if(value === a && index%2 === b && checkSidesOnly(index)) {
-            uv.array[index] = percentOfTexture;
-        }
-    })
-
-    // rotate 90 degrees counterclockwise
-    if(doRotate90DegreesCounterClockwise) {
-        for (let i = 0; i < 1; i++) {
-            let temp = uv.array[0];
-            uv.array.forEach((value, index) => {
-                if (index !== 0) {
-                    uv.array[index - 1] = value;
-                }
-            })
-            uv.array[uv.array.length - 1] = temp;
-        }
-    }
-
-    geometry.setAttribute('uv', uv)
 }
 
-function loadTextureWithNearestFilter(loader, url) {
-    const texture = loader.load(url);
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
-    return texture;
+
+
+function addSmoothStoneBlock(blocks, scene, x, y, z) {
+    blocks.set(
+        x, y, z,
+        new Block('smooth_stone', [addMeshToScene(scene, geometries.box, materials.smoothStone, x, y, z)])
+    );
 }
 
-function create6FacedMaterial(topTexture, leftTexture, rightTexture, frontTexture, backTexture, bottomTexture) {
-    // Create an array of materials to be used in a cube, one for each side
-    let materialArray = [];
 
-    // order to add materials: x+,x-,y+,y-,z+,z-
-    materialArray.push( new THREE.MeshStandardMaterial( {map : leftTexture} ) );
-    materialArray.push( new THREE.MeshStandardMaterial( {map : rightTexture} ) );
-    materialArray.push( new THREE.MeshStandardMaterial( {map : topTexture} ) );
-    materialArray.push( new THREE.MeshStandardMaterial( {map : bottomTexture} ) );
-    materialArray.push( new THREE.MeshStandardMaterial( {map : frontTexture} ) );
-    materialArray.push( new THREE.MeshStandardMaterial( {map : backTexture} ) );
 
-    return  materialArray;
+function addLight(scene) {
+    // add lighting to scene
+    const pointLight = new THREE.PointLight(0x000000);
+    pointLight.position.set(2, 2.5, 1.8);
+
+    // somewhat minecraft light : 0xccc8cf
+    const ambientLight = new THREE.AmbientLight(0xffffff);
+
+    scene.add(pointLight, ambientLight);
 }
 
-function getRedstoneColor(power) {
-    // create redstone color constants
-    const BASE_REDSTONE_RED = 90;
-    const BASE_REDSTONE_GREEN = 15;
-    const BASE_REDSTONE_BLUE = 15;
-
-    const MULT_REDSTONE_RED = 11;
-    const MULT_REDSTONE_GREEN = 4;
-    const MULT_REDSTONE_BLUE = 4;
-
-
-    // mix redstone color
-    // rgb have to be multiplied by 256*256, 256 and 1 respectfully, so that they can be added together afterwards (rgb is hex and stuff, you know?)
-    return ((power*MULT_REDSTONE_RED+BASE_REDSTONE_RED)*256*256
-        + (power*MULT_REDSTONE_GREEN+BASE_REDSTONE_GREEN)*256
-        + (power*MULT_REDSTONE_BLUE+BASE_REDSTONE_BLUE));
+// TODO addSmoothStoneBlock still missing
+function addAddSmoothStoneBlockBtn(blocks, scene) {
+    const addSmoothStoneBlockBtn = document.querySelector('#add-smooth-stone-block');
+    const addSmoothStoneBlockEventListener = () => {
+        const x = parseInt(document.querySelector('#x').value);
+        const y = parseInt(document.querySelector('#y').value);
+        const z = parseInt(document.querySelector('#z').value);
+        addSmoothStoneBlock(blocks, scene, x, y, z);
+    }
+    addSmoothStoneBlockBtn.addEventListener('click', addSmoothStoneBlockEventListener);
 }
 
 function addMeshToScene(scene, geometry, material, x, y, z, facing = DIRECTION.TOP) {
