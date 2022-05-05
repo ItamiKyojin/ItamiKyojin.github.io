@@ -1,24 +1,77 @@
+/*
+    TODO: make backgrounds from un-editable inputs transparent
+*/
+
+:root {
+    --base-text-color: white;
+    --base-text-shadow: 2px 2px 4px #000000;
+    --heading-text-color: rgb(180, 163, 131);
+}
+
 html {
     background:
         url(../assets/eldenring/background/Great_Rune_4050_2278_alpha_15.png),
         linear-gradient(
             to right,
-            rgba(100, 100, 90, 1),
-            rgba(100, 100, 90, 1),
-            rgba(100, 100, 90, 1),
-            rgba(100, 100, 90, 0.9),
-            rgba(100, 100, 90, 0.9),
-            rgba(100, 100, 90, 0.9),
-            rgba(100, 100, 90, 0.9)
+            rgba(100, 100, 90, 1) 33.33333%,
+            rgba(100, 100, 90, 0.9) 50%
         ),
-        url(../assets/eldenring/background/Abductor_Virgins.jpg); /*no-repeat center center fixed;*/
+        url(../assets/eldenring/background/Abductor_Virgins.jpg);
+        /*url(../assets/eldenring/background/ER_Status_Browser_Part.png);*/
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
 }
-div {
-    color: white;
+
+html, input, select {
+    font-family: fot-tsukuaoldmin-pr6n, "Palatino Linotype", sans-serif;
+    font-style: normal;
+    font-weight: 300;
+}
+
+input, select {
+    color: var(--base-text-color);
+    text-shadow: var(--base-text-shadow);
+    background-color: rgb(100, 100, 90);
+    border: 0;
+}
+
+div.dropdown-active div.item {
+    color: black;
+}
+
+div.option {
+    color: var(--base-text-color);
+}
+
+.selectize-control {
+    background-color: rgb(100, 100, 90);
+    font-size: 13px;
+    height: 20px;
+}
+
+.selectize-input {
+    min-height: 0;
+    padding: 0 12px;
+}
+
+.selectize-control.single {
+    background-color: #0000;
+}
+
+.selectize-input.full, .selectize-dropdown {
+    background-color: rgb(100, 100, 90);
+    border: 0;
+}
+
+.left-column-region div div .selectize-control {
+    width: 180px;
+}
+
+div.selectize-input {
+    color: var(--base-text-color);
+    /*text-shadow: var(--base-text-shadow);*/
 }
 
 .float-right {
@@ -29,9 +82,92 @@ div {
     float: left;
 }
 
-#outercontainer {
-    margin: 0 auto;
-    max-width: 1030px;
+body {
+    margin: 21px 64px auto 0;
+    color: var(--base-text-color);
+    text-shadow: var(--base-text-shadow);
+}
+
+header {
+    height: 48px;
+    margin-left: 40px;
+    color: var(--heading-text-color);
+}
+
+.status-icon {
+    height: 48px;
+    width: auto;
+}
+
+.icon-small {
+    height: 18px;
+    width: auto;
+    margin-right: 3px;
+}
+
+.status-label {
+    font-size: 24px;
+    padding-top: 9px;
+    padding-left: 55px;
+}
+
+.header-label {
+    color: var(--heading-text-color);
+}
+
+#name {
+    font-size: 20px;
+    margin-top: 25px;
+    margin-left: calc(40px + 42px);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.cust-underline {
+    content: "";
+    background: linear-gradient(to right, rgb(149, 147, 132), rgb(149, 147, 132) 40%, transparent);
+    filter: blur(1px);
+
+    float: bottom;
+    position: relative;
+    bottom: 4px;
+    width: 500px;
+    height: 2px;
+}
+
+.cust-vertline {
+    content: "";
+    background: linear-gradient(to bottom, transparent, rgb(149, 147, 132) 5%, rgb(149, 147, 132) 70%, transparent);
+    filter: blur(1px);
+
+    float: left;
+    /*position: relative;
+    bottom: 4px;*/
+    width: 2px;
+    height: 248px;
+}
+
+.height-84px {
+    height: 84px;
+}
+
+.height-100px {
+    height: 100px;
+}
+
+.height-112px {
+    height: 112px;
+}
+
+.height-150px {
+    height: 150px;
+}
+
+.height-200px {
+    height: 200px;
+}
+
+.er-planner-region {
+    margin-left: 85px;
 }
 
 .er-planner {
@@ -39,9 +175,30 @@ div {
     grid-template-columns: 33.33333% 33.33333% 33.33333%;
 }
 
-.er-column {
+.planner-column {
     padding-left: 10px;
     padding-right: 10px;
+}
+
+.er-planner .stat-box {
+    margin-left: 12px;
+}
+
+.heading-spacer {
+    content: "";
+    height: 21.6px;
+}
+
+.attribute-region, .runes-region {
+    margin-top: 48px;
+}
+
+.defense-region, .resistance-region, .talismans-region, .weapon-region, .active-effects-region {
+    margin-top: 32px;
+}
+
+.talismans-region, .weapon-region, .active-effects-region {
+    margin-top: 24px;
 }
 
 .armor-optimizer {
@@ -59,6 +216,10 @@ input.fixed, input.editable {
     text-align: center;
 }
 
+.spacer {
+    height: 12px;
+}
+
 .stat-box {
     line-height: 25px;
 }
@@ -71,21 +232,45 @@ input.fixed.big {
     width: 75px;
 }
 
-.armor-region select {
-    width: 200px;
+.position-absolute {
+    position: absolute;
 }
 
 /* Force ArmorSelects and their Labels to be in the same row */
-.armor-region {
+.armor-region, .talismans-region, .weapon-region {
     display: grid;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto;
 }
-
-/*.armor-region div .stat-box {
-    display: grid;
-    grid-template-columns: 33.33333% 66.66667%;
-}*/
 
 .right-column input {
     width: 90px;
+}
+
+.armor-region .selectize-control, .talismans-region .selectize-control {
+    width: 250px;
+}
+
+.weapon-region div.stat-box div:nth-of-type(1) {float: left}
+.weapon-region div.stat-box div:nth-of-type(2) {float: right}
+.weapon-region div.stat-box div label {float: left; margin-right: 10px}
+.weapon-region div.stat-box div div {float: right}
+
+.weapon-region .selectize-control {
+    width: 160px;
+}
+
+.active-effects-region {
+    min-height: 100px;
+}
+
+.active-effects-region ul {
+    background-color: rgb(100, 100, 90);
+    min-height: 88px;
+    margin: 8px 0 0 8px;
+    padding: 8px 16px 8px 16px;
+}
+
+.active-effects-region li {
+    font-size: 13px;
+    list-style-type: none;
 }
