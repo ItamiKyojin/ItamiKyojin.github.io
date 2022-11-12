@@ -449,10 +449,6 @@ function main() {
     const controls = new OrbitControls(camera, renderer.domElement);
 
 
-    // add block at given position on click
-    addAddSmoothStoneBlockBtn(blocks, scene);
-
-
     // add stuff on click
     const addStuffBtn = document.querySelector('#add-stuff');
     const addStuffEventListener = () => {
@@ -690,18 +686,6 @@ function addLight(scene) {
     const ambientLight = new THREE.AmbientLight(0xffffff);
 
     scene.add(pointLight, ambientLight);
-}
-
-// TODO addSmoothStoneBlock still missing
-function addAddSmoothStoneBlockBtn(blocks, scene) {
-    const addSmoothStoneBlockBtn = document.querySelector('#add-smooth-stone-block');
-    const addSmoothStoneBlockEventListener = () => {
-        const x = parseInt(document.querySelector('#x').value);
-        const y = parseInt(document.querySelector('#y').value);
-        const z = parseInt(document.querySelector('#z').value);
-        addSmoothStoneBlock(blocks, scene, x, y, z);
-    }
-    addSmoothStoneBlockBtn.addEventListener('click', addSmoothStoneBlockEventListener);
 }
 
 function addMeshToScene(scene, geometry, material, x, y, z, facing = DIRECTION.TOP) {
