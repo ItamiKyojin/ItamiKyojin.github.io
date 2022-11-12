@@ -587,13 +587,15 @@ function main() {
     // add blocks on double click
     const raycaster = new THREE.Raycaster()
 
-    if (!!('ontouchstart' in window)) {
+    if ('ontouchstart' in window) {
         console.log('mobile')
+        addEventListener('click', (event) => placeBlock())
     } else {
         console.log('pc')
+        addEventListener('dblclick', (event) => placeBlock())
     }
 
-    addEventListener('click', (event) => {
+    function placeBlock() {
         let sceneMeshes = getAllMeshes(blocks)
 
         const mouse = {
@@ -628,7 +630,7 @@ function main() {
 
             addSmoothStoneBlock(blocks, scene, position.x, position.y, position.z)
         }
-    })
+    }
 
 
     // animate
