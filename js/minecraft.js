@@ -587,7 +587,13 @@ function main() {
     // add blocks on double click
     const raycaster = new THREE.Raycaster()
 
-    addEventListener('dblclick', (event) => {
+    if (!!('ontouchstart' in window)) {
+        console.log('mobile')
+    } else {
+        console.log('pc')
+    }
+
+    addEventListener('click', (event) => {
         let sceneMeshes = getAllMeshes(blocks)
 
         const mouse = {
