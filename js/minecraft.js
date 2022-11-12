@@ -584,6 +584,46 @@ function main() {
     }
     actPistonBtn.addEventListener('click', actPistonEventListener);
 
+    // add blocks on double click
+    const raycaster = new THREE.Raycaster()
+
+    addEventListener('dblclick', (event) => {
+        let sceneMeshes = getAllMeshes(blocks)
+
+        const mouse = {
+            x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+            y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
+        }
+        raycaster.setFromCamera(mouse, camera)
+
+        const intersects = raycaster.intersectObjects(sceneMeshes, false)
+
+        if (intersects.length > 0) {
+            const position = new THREE.Vector3()
+            position.copy(intersects[0].object.position)
+
+            let clickPosition = intersects[0].point
+            if((clickPosition.x + 0.5) % 1 === 0) {
+                if(clickPosition.x > position.x)
+                    position.setX(position.x + 1)
+                else
+                    position.setX(position.x - 1)
+            } else if((clickPosition.y + 0.5) % 1 === 0) {
+                if(clickPosition.y > position.y)
+                    position.setY(position.y + 1)
+                else
+                    position.setY(position.y - 1)
+            } else if((clickPosition.z + 0.5) % 1 === 0) {
+                if(clickPosition.z > position.z)
+                    position.setZ(position.z + 1)
+                else
+                    position.setZ(position.z - 1)
+            }
+
+            addSmoothStoneBlock(blocks, scene, position.x, position.y, position.z)
+        }
+    })
+
 
     // animate
     let curFrame = 0;
@@ -596,7 +636,7 @@ function main() {
         curFrame %= DEFAULT_FRAME_RATE;
 
         // act once every game tick
-        if(curFrame%3 === 0) {
+        if(curFrame % FRAMES_PER_GAME_TICK === 0) {
             // do gameLoop
             // TODO
         }
@@ -686,6 +726,20 @@ function destroyBlock(blocks, scene, x, y, z) {
         scene.remove(mesh);
     })
     blocks.set(x, y, z, undefined);
+}
+
+function getAllMeshes(blocks) {
+    let res = []
+
+    for(let i = 0; i < 8; i++) {
+        blocks.array[i].array.forEach(block => {
+            block.meshes.forEach(mesh => {
+                res.push(mesh)
+            })
+        })
+    }
+
+    return res
 }
 
 function addAllMeshesToScene(blocks, scene) {
