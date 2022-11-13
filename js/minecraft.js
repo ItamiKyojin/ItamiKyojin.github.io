@@ -449,8 +449,55 @@ function main() {
     const controls = new OrbitControls(camera, renderer.domElement);
 
 
+    // add mode buttons
+    const deleteModeBtn = document.querySelector('#delete-mode');
+    const deleteModeEventListener = (event) => {
+        removeSelectedClass()
+        event.currentTarget.classList.add("selected")
+        // update event listener
+        removeMouseEventListener(deleteBlock)
+        removeMouseEventListener(placeBlock)
+        removeMouseEventListener(doNothing)
+        addMouseEventListener(deleteBlock)
+    }
+    deleteModeBtn.addEventListener('click', deleteModeEventListener);
+
+    const createModeBtn = document.querySelector('#create-mode');
+    const createModeEventListener = (event) => {
+        removeSelectedClass()
+        event.currentTarget.classList.add("selected")
+        // update event listener
+        removeMouseEventListener(deleteBlock)
+        removeMouseEventListener(placeBlock)
+        removeMouseEventListener(doNothing)
+        addMouseEventListener(placeBlock)
+    }
+    createModeBtn.addEventListener('click', createModeEventListener);
+
+    const interactModeBtn = document.querySelector('#interact-mode');
+    const interactModeEventListener = (event) => {
+        removeSelectedClass()
+        event.currentTarget.classList.add("selected")
+        // update event listener
+        removeMouseEventListener(deleteBlock)
+        removeMouseEventListener(placeBlock)
+        removeMouseEventListener(doNothing)
+        addMouseEventListener(doNothing)
+    }
+    interactModeBtn.addEventListener('click', interactModeEventListener);
+
+    function removeSelectedClass() {
+        [deleteModeBtn, createModeBtn, interactModeBtn].forEach(button => {
+            button.classList.remove("selected")
+        })
+    }
+
+    function doNothing() {
+        console.log("Nothing")
+    }
+
     // add stuff on click
-    const addStuffBtn = document.querySelector('#add-stuff');
+    /* const addStuffBtn = document.querySelector('#add-stuff');
     const addStuffEventListener = () => {
         // add 5 smooth stone blocks before and after floor
         let block = {'name' : 'smooth_stone', 'mesh' : undefined};
@@ -467,7 +514,7 @@ function main() {
             addRedstoneDust(0, 0.5 + 1/64, z, z+8);
         }
     }
-    addStuffBtn.addEventListener('click', addStuffEventListener);
+    addStuffBtn.addEventListener('click', addStuffEventListener); */
 
 
     // remove all meshes from scene on click
@@ -487,7 +534,7 @@ function main() {
 
 
     // remove all meshes from scene on click
-    const actPistonBtn = document.querySelector('#extend-retract-piston');
+    // const actPistonBtn = document.querySelector('#extend-retract-piston');
     const actPistonEventListener = () => {
         // get piston @002
         /*let x, y, z;
@@ -578,20 +625,34 @@ function main() {
             animations.push(new AnimateMoveTask([piston.meshes[2], piston.meshes[3]], -dirX, -dirY, -dirZ, 2 * FRAMES_PER_GAME_TICK));
         }
     }
-    actPistonBtn.addEventListener('click', actPistonEventListener);
+    // actPistonBtn.addEventListener('click', actPistonEventListener);
 
     // add blocks on double click
     const raycaster = new THREE.Raycaster()
 
-    if ('ontouchstart' in window) {
-        console.log('mobile')
-        addEventListener('click', (event) => placeBlock())
-    } else {
-        console.log('pc')
-        addEventListener('dblclick', (event) => placeBlock())
+    addMouseEventListener(placeBlock)
+
+    function addMouseEventListener(eventListener) {
+        if ('ontouchstart' in window) {
+            // console.log('mobile')
+            canvas.addEventListener('click', eventListener)
+        } else {
+            // console.log('pc')
+            canvas.addEventListener('dblclick', eventListener)
+        }
     }
 
-    function placeBlock() {
+    function removeMouseEventListener(eventListener) {
+        if ('ontouchstart' in window) {
+            // console.log('mobile')
+            canvas.removeEventListener('click', eventListener)
+        } else {
+            // console.log('pc')
+            canvas.removeEventListener('dblclick', eventListener)
+        }
+    }
+
+    function placeBlock(event) {
         let sceneMeshes = getAllMeshes(blocks)
 
         const mouse = {
@@ -625,6 +686,24 @@ function main() {
             }
 
             addSmoothStoneBlock(blocks, scene, position.x, position.y, position.z)
+        }
+    }
+
+    function deleteBlock(event) {
+        let sceneMeshes = getAllMeshes(blocks)
+
+        const mouse = {
+            x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+            y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
+        }
+        raycaster.setFromCamera(mouse, camera)
+
+        const intersects = raycaster.intersectObjects(sceneMeshes, false)
+
+        if (intersects.length > 0) {
+            const position = new THREE.Vector3()
+            position.copy(intersects[0].object.position)
+            destroyBlock(blocks, scene, position.x, position.y, position.z)
         }
     }
 
@@ -725,9 +804,11 @@ function getAllMeshes(blocks) {
 
     for(let i = 0; i < 8; i++) {
         blocks.array[i].array.forEach(block => {
-            block.meshes.forEach(mesh => {
-                res.push(mesh)
-            })
+            if(block) {
+                block.meshes.forEach(mesh => {
+                    res.push(mesh)
+                })
+            }
         })
     }
 
