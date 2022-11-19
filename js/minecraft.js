@@ -666,23 +666,25 @@ function main() {
         if (intersects.length > 0) {
             const position = new THREE.Vector3()
             position.copy(intersects[0].object.position)
+            const clickPosition = intersects[0].point
+            const measures = intersects[0].object.geometry.parameters
 
-            let clickPosition = intersects[0].point
-            if((clickPosition.x + 0.5) % 1 === 0) {
-                if(clickPosition.x > position.x)
-                    position.setX(position.x + 1)
-                else
-                    position.setX(position.x - 1)
-            } else if((clickPosition.y + 0.5) % 1 === 0) {
-                if(clickPosition.y > position.y)
-                    position.setY(position.y + 1)
-                else
-                    position.setY(position.y - 1)
-            } else if((clickPosition.z + 0.5) % 1 === 0) {
-                if(clickPosition.z > position.z)
-                    position.setZ(position.z + 1)
-                else
-                    position.setZ(position.z - 1)
+            if((clickPosition.x - measures.width/2) === position.x) {
+                position.setX(position.x + 1)
+            } else if((clickPosition.y - measures.height/2) === position.y) {
+                position.setY(position.y + 1)
+            } else if((clickPosition.z - measures.depth/2) === position.z) {
+                position.setZ(position.z + 1)
+            } else if((clickPosition.x + measures.width/2) === position.x) {
+                position.setX(position.x - 1)
+            } else if((clickPosition.y + measures.height/2) === position.y) {
+                position.setY(position.y - 1)
+            } else if((clickPosition.z + measures.depth/2) === position.z) {
+                position.setZ(position.z - 1)
+            }
+
+            for (const [key, value] of Object.entries(position)) {
+                position[key] = Math.round(value)
             }
 
             addSmoothStoneBlock(blocks, scene, position.x, position.y, position.z)
@@ -703,6 +705,9 @@ function main() {
         if (intersects.length > 0) {
             const position = new THREE.Vector3()
             position.copy(intersects[0].object.position)
+            for (const [key, value] of Object.entries(position)) {
+                position[key] = Math.round(value)
+            }
             destroyBlock(blocks, scene, position.x, position.y, position.z)
         }
     }
