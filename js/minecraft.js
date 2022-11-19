@@ -496,6 +496,10 @@ function main() {
         console.log("Nothing")
     }
 
+    const numSlots = 9
+    createHotbar(numSlots)
+    createSelectSlot(0, numSlots)
+
     // add stuff on click
     /* const addStuffBtn = document.querySelector('#add-stuff');
     const addStuffEventListener = () => {
@@ -751,6 +755,47 @@ function main() {
 }
 
 
+
+function createHotbar(numSlots) {
+    const itemSection = document.querySelector('#items');
+
+    for(let i = 0; i < numSlots; i++){
+        const offset = (-25 * (numSlots - 1)) + (50 * i)
+        const borderImg = document.createElement("img");
+        borderImg.src = "assets/minecraft/1.18.1/minecraft/textures/gui/slot_border.png"
+        borderImg.classList.add("border", "item")
+        borderImg.style.cssText = `margin-left:${offset-2.5}px;`
+        itemSection.appendChild(borderImg)
+    }
+    for(let i = 0; i < numSlots; i++){
+        const offset = (-25 * (numSlots - 1)) + (50 * i)
+        const slotImg = document.createElement("img");
+        slotImg.src = `assets/minecraft/1.18.1/minecraft/textures/gui/slot_${i}.png`
+        slotImg.classList.add("item")
+        slotImg.style.cssText = `margin-left:${offset}px;`
+        slotImg.addEventListener("click", () => {selectSlot(i, numSlots)})
+        itemSection.appendChild(slotImg)
+    }
+}
+
+function createSelectSlot(selectedSlot, numSlots) {
+    const offset = (-25 * (numSlots - 1)) + (50 * selectedSlot)
+    const itemSection = document.querySelector('#items');
+
+    const selectImg = document.createElement("img");
+    selectImg.src = "assets/minecraft/1.18.1/minecraft/textures/gui/slot_selected.png"
+    selectImg.classList.add("item")
+    selectImg.id = "selected-item"
+    selectImg.style.cssText = `margin-left:${offset-5}px;`
+    itemSection.appendChild(selectImg)
+}
+
+function selectSlot(selectedSlot, numSlots) {
+    const offset = (-25 * (numSlots - 1)) + (50 * selectedSlot)
+    const selectedItem = document.querySelector('#selected-item');
+
+    selectedItem.style.cssText = `margin-left:${offset-5}px;`
+}
 
 function addSmoothStoneBlock(blocks, scene, x, y, z) {
     blocks.set(
