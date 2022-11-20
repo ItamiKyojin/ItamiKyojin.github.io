@@ -454,7 +454,11 @@ function main() {
         currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, createModeFunction))
         createModeBtn.addEventListener("click", currentCreateModeEventListener)
 
-        // TODO: change onclick function, when changing with active createMode
+        if(createModeBtn.classList.contains("selected")) {
+            removeMouseEventListener(currentModeFunction)
+            currentModeFunction = (event) => placeBlock(event, createModeFunction)
+            addMouseEventListener(currentModeFunction)
+        }
     }
 
     function removeSelectedClass() {
