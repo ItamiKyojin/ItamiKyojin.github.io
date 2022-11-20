@@ -27,6 +27,12 @@ body {
     image-rendering: crisp-edges;
 }
 
+.item-icon {
+    width: 40px;
+    height: 40px;
+    margin-top: 6px;
+}
+
 #selected-item {
     width: 60px;
     height: 60px;

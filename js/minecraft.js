@@ -324,6 +324,7 @@ function main() {
     // ---------- initiate great array ----------
     const blocks = new Array3dPlus();
     const animations = [];
+    let currentModeFunction
 
 
     // ---------- define functions requiring specific textures, materials, geometry and/or blocks ----------
@@ -384,28 +385,6 @@ function main() {
         );
     }
 
-    function addRepeater(x, y, z, facing = DIRECTION.FRONT) {
-        let [dirX, dirY, dirZ] = directionToArrayXYZ(facing);
-
-        // add diodeBase to scene
-        const diodeBase = addMeshToScene(scene, geometries.diodeBase, materials.repeater, x, y - 7/16, z, facing);
-
-        // correct rotation to be flat/horizontal on blocks
-        switch(facing) {
-            case DIRECTION.LEFT: diodeBase.rotateZ(-90 * DEG_TO_RAD); diodeBase.rotateY(90 * DEG_TO_RAD); break;
-            case DIRECTION.RIGHT: diodeBase.rotateZ(90 * DEG_TO_RAD); diodeBase.rotateY(270 * DEG_TO_RAD); break;
-            case DIRECTION.FRONT: diodeBase.rotateX(-90 * DEG_TO_RAD); diodeBase.rotateY(180 * DEG_TO_RAD); break;
-            case DIRECTION.BACK: diodeBase.rotateX(90 * DEG_TO_RAD); break;
-        }
-
-        // add both halfTorches to scene
-        const movableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 1/16), y - 3/16 - 1/32, z + (dirZ * 1/16), DIRECTION.TOP);
-        const immovableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 5/16), y - 3/16 - 1/32, z + (dirZ * 5/16), DIRECTION.TOP);
-
-        // add repeater to blocks array
-        blocks.set(x, y, z, new Repeater([diodeBase, immovableTorch, movableTorch], facing))
-    }
-
 
     // add 5x5 piston floor to scene
     for(let x = -2; x < 3; x++) {
@@ -429,7 +408,7 @@ function main() {
 
 
     // add some diodes
-    addRepeater(0, 1, 0, DIRECTION.BACK);
+    addRepeater(blocks, scene, 0, 1, 0, DIRECTION.BACK);
 
 
     // add lighting to scene
@@ -448,43 +427,35 @@ function main() {
     // orbit controls
     const controls = new OrbitControls(camera, renderer.domElement);
 
+    let currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, addSmoothStoneBlock))
 
     // add mode buttons
-    const deleteModeBtn = document.querySelector('#delete-mode');
-    const deleteModeEventListener = (event) => {
-        removeSelectedClass()
-        event.currentTarget.classList.add("selected")
-        // update event listener
-        removeMouseEventListener(deleteBlock)
-        removeMouseEventListener(placeBlock)
-        removeMouseEventListener(doNothing)
-        addMouseEventListener(deleteBlock)
-    }
-    deleteModeBtn.addEventListener('click', deleteModeEventListener);
+    const deleteModeBtn = addModeEventListener("#delete-mode", (event) => modeEventListener(event, deleteBlock))
+    const createModeBtn = addModeEventListener("#create-mode", currentCreateModeEventListener)
+    const interactModeBtn = addModeEventListener("#interact-mode", (event) => modeEventListener(event, doNothing))
 
-    const createModeBtn = document.querySelector('#create-mode');
-    const createModeEventListener = (event) => {
-        removeSelectedClass()
-        event.currentTarget.classList.add("selected")
-        // update event listener
-        removeMouseEventListener(deleteBlock)
-        removeMouseEventListener(placeBlock)
-        removeMouseEventListener(doNothing)
-        addMouseEventListener(placeBlock)
+    function addModeEventListener(modeID, modeFunction) {
+        const modeBtn = document.querySelector(modeID);
+        modeBtn.addEventListener('click', modeFunction)
+        return modeBtn
     }
-    createModeBtn.addEventListener('click', createModeEventListener);
 
-    const interactModeBtn = document.querySelector('#interact-mode');
-    const interactModeEventListener = (event) => {
+    const modeEventListener = (event, modeFunction) => {
         removeSelectedClass()
         event.currentTarget.classList.add("selected")
         // update event listener
-        removeMouseEventListener(deleteBlock)
-        removeMouseEventListener(placeBlock)
-        removeMouseEventListener(doNothing)
-        addMouseEventListener(doNothing)
+        removeMouseEventListener(currentModeFunction)
+        currentModeFunction = (event) => modeFunction(event)
+        addMouseEventListener(currentModeFunction)
     }
-    interactModeBtn.addEventListener('click', interactModeEventListener);
+
+    function updateCreateModeFunction(createModeFunction) {
+        createModeBtn.removeEventListener("click", currentCreateModeEventListener)
+        currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, createModeFunction))
+        createModeBtn.addEventListener("click", currentCreateModeEventListener)
+
+        // TODO: change onclick function, when changing with active createMode
+    }
 
     function removeSelectedClass() {
         [deleteModeBtn, createModeBtn, interactModeBtn].forEach(button => {
@@ -519,22 +490,6 @@ function main() {
         }
     }
     addStuffBtn.addEventListener('click', addStuffEventListener); */
-
-
-    // remove all meshes from scene on click
-    /*const removeMeshesBtn = document.querySelector('#remove-meshes');
-    const removeMeshesEventListener = () => {
-        removeAllMeshesFromScene(blocks, scene);
-    }
-    removeMeshesBtn.addEventListener('click', removeMeshesEventListener);*/
-
-
-    // add all meshes to scene on click
-    /*const addMeshesBtn = document.querySelector('#add-meshes');
-    const addMeshesEventListener = () => {
-        addAllMeshesToScene(blocks, scene);
-    }
-    addMeshesBtn.addEventListener('click', addMeshesEventListener);*/
 
 
     // remove all meshes from scene on click
@@ -634,7 +589,8 @@ function main() {
     // add blocks on double click
     const raycaster = new THREE.Raycaster()
 
-    addMouseEventListener(placeBlock)
+    currentModeFunction = (event) => placeBlock(event, addSmoothStoneBlock)
+    addMouseEventListener(currentModeFunction)
 
     function addMouseEventListener(eventListener) {
         if ('ontouchstart' in window) {
@@ -656,46 +612,43 @@ function main() {
         }
     }
 
-    function placeBlock(event) {
-        let sceneMeshes = getAllMeshes(blocks)
+    function placeBlock(event, addBlockFunction) {
+        console.log(addBlockFunction)
 
-        const mouse = {
-            x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
-            y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
-        }
-        raycaster.setFromCamera(mouse, camera)
-
-        const intersects = raycaster.intersectObjects(sceneMeshes, false)
+        const intersects = getIntersectingBlocks(event)
 
         if (intersects.length > 0) {
-            const position = new THREE.Vector3()
+            let position = new THREE.Vector3()
             position.copy(intersects[0].object.position)
+
             const clickPosition = intersects[0].point
             const measures = intersects[0].object.geometry.parameters
-
-            if((clickPosition.x - measures.width/2) === position.x) {
-                position.setX(position.x + 1)
-            } else if((clickPosition.y - measures.height/2) === position.y) {
-                position.setY(position.y + 1)
-            } else if((clickPosition.z - measures.depth/2) === position.z) {
-                position.setZ(position.z + 1)
-            } else if((clickPosition.x + measures.width/2) === position.x) {
-                position.setX(position.x - 1)
-            } else if((clickPosition.y + measures.height/2) === position.y) {
-                position.setY(position.y - 1)
-            } else if((clickPosition.z + measures.depth/2) === position.z) {
-                position.setZ(position.z - 1)
-            }
+            position = updatePositionInFacingDirection(position, clickPosition, measures)
 
             for (const [key, value] of Object.entries(position)) {
                 position[key] = Math.round(value)
             }
 
-            addSmoothStoneBlock(blocks, scene, position.x, position.y, position.z)
+            addBlockFunction(blocks, scene, position.x, position.y, position.z)
         }
     }
 
     function deleteBlock(event) {
+        const intersects = getIntersectingBlocks(event)
+
+        if (intersects.length > 0) {
+            const position = new THREE.Vector3()
+            position.copy(intersects[0].object.position)
+
+            for (const [key, value] of Object.entries(position)) {
+                position[key] = Math.round(value)
+            }
+
+            destroyBlock(blocks, scene, position.x, position.y, position.z)
+        }
+    }
+
+    function getIntersectingBlocks(event) {
         let sceneMeshes = getAllMeshes(blocks)
 
         const mouse = {
@@ -704,16 +657,7 @@ function main() {
         }
         raycaster.setFromCamera(mouse, camera)
 
-        const intersects = raycaster.intersectObjects(sceneMeshes, false)
-
-        if (intersects.length > 0) {
-            const position = new THREE.Vector3()
-            position.copy(intersects[0].object.position)
-            for (const [key, value] of Object.entries(position)) {
-                position[key] = Math.round(value)
-            }
-            destroyBlock(blocks, scene, position.x, position.y, position.z)
-        }
+        return raycaster.intersectObjects(sceneMeshes, false)
     }
 
 
@@ -752,31 +696,45 @@ function main() {
     }
 
     animate();
+
+    function createHotbar(numSlots) {
+        const itemSection = document.querySelector('#items');
+
+        for(let i = 0; i < numSlots; i++){
+            const offset = (-25 * (numSlots - 1)) + (50 * i)
+            const borderImg = document.createElement("img");
+            borderImg.src = "assets/minecraft/1.18.1/minecraft/textures/gui/slot_border.png"
+            borderImg.classList.add("border", "item")
+            borderImg.style.cssText = `margin-left:${offset-2.5}px;`
+            itemSection.appendChild(borderImg)
+        }
+        for(let i = 0; i < numSlots; i++){
+            const offset = (-25 * (numSlots - 1)) + (50 * i)
+            const slotImg = document.createElement("img");
+            slotImg.src = `assets/minecraft/1.18.1/minecraft/textures/gui/slot_${i}.png`
+            slotImg.classList.add("item")
+            slotImg.style.cssText = `margin-left:${offset}px;`
+            slotImg.addEventListener("click", () => {selectSlot(i, numSlots)})
+            itemSection.appendChild(slotImg)
+
+            const initialItems = [["smooth_stone", addSmoothStoneBlock], ["repeater", addRepeater]]
+            if(initialItems[i]) {
+                const stoneImage = document.createElement("img");
+                stoneImage.src = `assets/minecraft/1.18.1/minecraft/textures/item/${initialItems[i][0]}.png`
+                stoneImage.classList.add("item", "item-icon")
+                stoneImage.style.cssText = `margin-left:${offset + 5}px;pointer-events:none;`
+                slotImg.addEventListener("click", () => {
+                    updateCreateModeFunction(initialItems[i][1])
+                })
+                itemSection.appendChild(stoneImage)
+            }
+        }
+    }
 }
 
 
 
-function createHotbar(numSlots) {
-    const itemSection = document.querySelector('#items');
 
-    for(let i = 0; i < numSlots; i++){
-        const offset = (-25 * (numSlots - 1)) + (50 * i)
-        const borderImg = document.createElement("img");
-        borderImg.src = "assets/minecraft/1.18.1/minecraft/textures/gui/slot_border.png"
-        borderImg.classList.add("border", "item")
-        borderImg.style.cssText = `margin-left:${offset-2.5}px;`
-        itemSection.appendChild(borderImg)
-    }
-    for(let i = 0; i < numSlots; i++){
-        const offset = (-25 * (numSlots - 1)) + (50 * i)
-        const slotImg = document.createElement("img");
-        slotImg.src = `assets/minecraft/1.18.1/minecraft/textures/gui/slot_${i}.png`
-        slotImg.classList.add("item")
-        slotImg.style.cssText = `margin-left:${offset}px;`
-        slotImg.addEventListener("click", () => {selectSlot(i, numSlots)})
-        itemSection.appendChild(slotImg)
-    }
-}
 
 function createSelectSlot(selectedSlot, numSlots) {
     const offset = (-25 * (numSlots - 1)) + (50 * selectedSlot)
@@ -797,13 +755,53 @@ function selectSlot(selectedSlot, numSlots) {
     selectedItem.style.cssText = `margin-left:${offset-5}px;`
 }
 
-function addSmoothStoneBlock(blocks, scene, x, y, z) {
+function updatePositionInFacingDirection(position, clickPosition, measures) {
+    if((clickPosition.x - measures.width/2) === position.x) {
+        position.setX(position.x + 1)
+    } else if((clickPosition.y - measures.height/2) === position.y) {
+        position.setY(position.y + 1)
+    } else if((clickPosition.z - measures.depth/2) === position.z) {
+        position.setZ(position.z + 1)
+    } else if((clickPosition.x + measures.width/2) === position.x) {
+        position.setX(position.x - 1)
+    } else if((clickPosition.y + measures.height/2) === position.y) {
+        position.setY(position.y - 1)
+    } else if((clickPosition.z + measures.depth/2) === position.z) {
+        position.setZ(position.z - 1)
+    }
+
+    return position
+}
+
+
+function addSmoothStoneBlock(blocks, scene, x, y, z, facing = DIRECTION.FRONT) {
     blocks.set(
         x, y, z,
         new Block('smooth_stone', [addMeshToScene(scene, geometries.box, materials.smoothStone, x, y, z)])
     );
 }
 
+function addRepeater(blocks, scene, x, y, z, facing = DIRECTION.FRONT) {
+    let [dirX, dirY, dirZ] = directionToArrayXYZ(facing);
+
+    // add diodeBase to scene
+    const diodeBase = addMeshToScene(scene, geometries.diodeBase, materials.repeater, x, y - 7/16, z, facing);
+
+    // correct rotation to be flat/horizontal on blocks
+    switch(facing) {
+        case DIRECTION.LEFT: diodeBase.rotateZ(-90 * DEG_TO_RAD); diodeBase.rotateY(90 * DEG_TO_RAD); break;
+        case DIRECTION.RIGHT: diodeBase.rotateZ(90 * DEG_TO_RAD); diodeBase.rotateY(270 * DEG_TO_RAD); break;
+        case DIRECTION.FRONT: diodeBase.rotateX(-90 * DEG_TO_RAD); diodeBase.rotateY(180 * DEG_TO_RAD); break;
+        case DIRECTION.BACK: diodeBase.rotateX(90 * DEG_TO_RAD); break;
+    }
+
+    // add both halfTorches to scene
+    const movableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 1/16), y - 3/16 - 1/32, z + (dirZ * 1/16), DIRECTION.TOP);
+    const immovableTorch = addMeshToScene(scene, geometries.halfTorch, materials.redstoneTorchOff, x + (dirX * 5/16), y - 3/16 - 1/32, z + (dirZ * 5/16), DIRECTION.TOP);
+
+    // add repeater to blocks array
+    blocks.set(x, y, z, new Repeater([diodeBase, immovableTorch, movableTorch], facing))
+}
 
 
 function addLight(scene) {
