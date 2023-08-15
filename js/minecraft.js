@@ -339,6 +339,14 @@ function main() {
         );
     }
 
+    function addRedstone(blocks, scene, x, y, z) {
+        const REDSTONE_OFFSET = 7/16 + 1/32
+        blocks.set(
+            x, y, z,
+            new Block('redstone', [addMeshToScene(scene, geometries.topPlane, materials.redstoneDustLine0Array[0], x, y - REDSTONE_OFFSET, z)])
+        )
+    }
+
     function addPiston(x, y, z, facing = DIRECTION.TOP) {
         // as blocks are being created, they are being created in the center of the grid
         // BUT, as e.g. a piston isn't made up of simply a whole block, but multiple parts
@@ -416,16 +424,20 @@ function main() {
 
 
     // add helper
-    /*
-    //const lightHelper = new THREE.PointLightHelper(pointLight);
-    //const gridHelper = new THREE.GridHelper(200, 50);
+    // const lightHelper = new THREE.PointLightHelper(pointLight);
+    const gridHelper = new THREE.GridHelper(200, 50);
 
-    //scene.add(lightHelper, gridHelper);
-    */
+    scene.add(/*lightHelper, */gridHelper);
 
 
     // orbit controls
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const url_string = window.location.href;
+    const url = new URL(url_string);
+    const no_controls = url.searchParams.get("static");
+    let controls
+    if(no_controls == null) {
+        controls = new OrbitControls(camera, renderer.domElement);
+    }
 
     let currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, addSmoothStoneBlock))
 
@@ -692,8 +704,10 @@ function main() {
         curFrame++;
 
 
-        // update controls
-        controls.update();
+        // update
+        if(no_controls == null) {
+            controls.update();
+        }
 
         // render scene
         renderer.render(scene, camera);
@@ -721,7 +735,7 @@ function main() {
             slotImg.addEventListener("click", () => {selectSlot(i, numSlots)})
             itemSection.appendChild(slotImg)
 
-            const initialItems = [["smooth_stone", addSmoothStoneBlock], ["repeater", addRepeater]]
+            const initialItems = [["smooth_stone", addSmoothStoneBlock], ["repeater", addRepeater], ["redstone", addRedstone]]
             if(initialItems[i]) {
                 const stoneImage = document.createElement("img");
                 stoneImage.src = `assets/minecraft/1.18.1/minecraft/textures/item/${initialItems[i][0]}.png`
