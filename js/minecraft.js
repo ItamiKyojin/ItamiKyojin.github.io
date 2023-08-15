@@ -297,7 +297,7 @@ function main() {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     // create renderer
     const renderer = new THREE.WebGLRenderer({
-        canvas : canvas
+        canvas: canvas
     })
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -340,7 +340,7 @@ function main() {
     }
 
     function addRedstone(blocks, scene, x, y, z) {
-        const REDSTONE_OFFSET = 7/16 + 1/32
+        const REDSTONE_OFFSET = 7 / 16 + 1 / 32
         blocks.set(
             x, y, z,
             new Block('redstone', [addMeshToScene(scene, geometries.topPlane, materials.redstoneDustLine0Array[0], x, y - REDSTONE_OFFSET, z)])
@@ -351,25 +351,25 @@ function main() {
         // as blocks are being created, they are being created in the center of the grid
         // BUT, as e.g. a piston isn't made up of simply a whole block, but multiple parts
         // they have to be pushed to their respective positions
-        const PISTON_HEAD_OFFSET = 3/8;
-        const PISTON_SHAFT_OFFSET = -1/4;
-        const PISTON_BASE_OFFSET = -1/8;
+        const PISTON_HEAD_OFFSET = 3 / 8;
+        const PISTON_SHAFT_OFFSET = -1 / 4;
+        const PISTON_BASE_OFFSET = -1 / 8;
 
         let xOffset = (offset) => {
-            if(facing === DIRECTION.RIGHT) return offset;
-            if(facing === DIRECTION.LEFT) return -offset;
+            if (facing === DIRECTION.RIGHT) return offset;
+            if (facing === DIRECTION.LEFT) return -offset;
             return 0;
         }
 
         let yOffset = (offset) => {
-            if(facing === DIRECTION.TOP) return offset;
-            if(facing === DIRECTION.BOTTOM) return -offset;
+            if (facing === DIRECTION.TOP) return offset;
+            if (facing === DIRECTION.BOTTOM) return -offset;
             return 0;
         }
 
         let zOffset = (offset) => {
-            if(facing === DIRECTION.FRONT) return offset;
-            if(facing === DIRECTION.BACK) return -offset;
+            if (facing === DIRECTION.FRONT) return offset;
+            if (facing === DIRECTION.BACK) return -offset;
             return 0;
         }
 
@@ -395,8 +395,8 @@ function main() {
 
 
     // add 5x5 piston floor to scene
-    for(let x = -2; x < 3; x++) {
-        for(let z = -2; z < 3; z++) {
+    for (let x = -2; x < 3; x++) {
+        for (let z = -2; z < 3; z++) {
             //addSmoothStoneBlock(blocks, scene, x, 0, z);
             addPiston(x, 0, z, DIRECTION.TOP);
         }
@@ -435,16 +435,27 @@ function main() {
     const url = new URL(url_string);
     const no_controls = url.searchParams.get("static");
     let controls
-    if(no_controls == null) {
+    if (no_controls != null) {
+        document.getElementById("delete-mode").remove();
+        document.getElementById("create-mode").remove();
+        document.getElementById("interact-mode").remove();
+    }
+    if (no_controls == null) {
         controls = new OrbitControls(camera, renderer.domElement);
     }
 
-    let currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, addSmoothStoneBlock))
+    let currentCreateModeEventListener
+    let deleteModeBtn
+    let createModeBtn
+    let interactModeBtn
+    if (no_controls == null) {
+        currentCreateModeEventListener = (event) => modeEventListener(event, (event) => placeBlock(event, addSmoothStoneBlock))
 
-    // add mode buttons
-    const deleteModeBtn = addModeEventListener("#delete-mode", (event) => modeEventListener(event, deleteBlock))
-    const createModeBtn = addModeEventListener("#create-mode", currentCreateModeEventListener)
-    const interactModeBtn = addModeEventListener("#interact-mode", (event) => modeEventListener(event, doNothing))
+        // add mode buttons
+        deleteModeBtn = addModeEventListener("#delete-mode", (event) => modeEventListener(event, deleteBlock))
+        createModeBtn = addModeEventListener("#create-mode", currentCreateModeEventListener)
+        interactModeBtn = addModeEventListener("#interact-mode", (event) => modeEventListener(event, doNothing))
+    }
 
     function addModeEventListener(modeID, modeFunction) {
         const modeBtn = document.querySelector(modeID);
@@ -452,13 +463,16 @@ function main() {
         return modeBtn
     }
 
-    const modeEventListener = (event, modeFunction) => {
-        removeSelectedClass()
-        event.currentTarget.classList.add("selected")
-        // update event listener
-        removeMouseEventListener(currentModeFunction)
-        currentModeFunction = (event) => modeFunction(event)
-        addMouseEventListener(currentModeFunction)
+    let modeEventListener
+    if (no_controls == null) {
+        modeEventListener = (event, modeFunction) => {
+            removeSelectedClass()
+            event.currentTarget.classList.add("selected")
+            // update event listener
+            removeMouseEventListener(currentModeFunction)
+            currentModeFunction = (event) => modeFunction(event)
+            addMouseEventListener(currentModeFunction)
+        }
     }
 
     function updateCreateModeFunction(createModeFunction) {
@@ -483,9 +497,12 @@ function main() {
         console.log("Nothing")
     }
 
-    const numSlots = 9
-    createHotbar(numSlots)
-    createSelectSlot(0, numSlots)
+
+    if(no_controls == null) {
+        const numSlots = 9
+        createHotbar(numSlots)
+        createSelectSlot(0, numSlots)
+    }
 
     // add stuff on click
     /* const addStuffBtn = document.querySelector('#add-stuff');
@@ -605,8 +622,10 @@ function main() {
     // add blocks on double click
     const raycaster = new THREE.Raycaster()
 
-    currentModeFunction = (event) => placeBlock(event, addSmoothStoneBlock)
-    addMouseEventListener(currentModeFunction)
+    if (no_controls == null) {
+        currentModeFunction = (event) => placeBlock(event, addSmoothStoneBlock)
+        addMouseEventListener(currentModeFunction)
+    }
 
     function addMouseEventListener(eventListener) {
         if ('ontouchstart' in window) {
